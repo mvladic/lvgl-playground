@@ -1,0 +1,15 @@
+{
+  "name": "lvgl-playground",
+  "version": "1.0.0",
+  "description": "Interactive playground for EEZ Script with LVGL",
+  "scripts": {
+    "dev": "npx live-server .",
+    "start": "npm run dev"
+  },
+  "keywords": ["lvgl", "eez-script", "playground", "wasm"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "studio-wasm-libs": "github:eez-open/studio-wasm-libs"
+  }
+}

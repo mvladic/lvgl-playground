@@ -1,0 +1,662 @@
+{
+  "lv_group_create": {
+    "returnType": "lv_group_t *",
+    "params": "void"
+  },
+  "lv_group_add_obj": {
+    "returnType": "void",
+    "params": "lv_group_t * group, lv_obj_t * obj"
+  },
+  "lv_group_remove_all_objs": {
+    "returnType": "void",
+    "params": "lv_group_t * group"
+  },
+  "lv_obj_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_obj_add_flag": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, lv_obj_flag_t f"
+  },
+  "lv_obj_add_state": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, lv_state_t state"
+  },
+  "lv_obj_has_flag": {
+    "returnType": "bool",
+    "params": "const lv_obj_t * obj, lv_obj_flag_t f"
+  },
+  "lv_obj_get_state": {
+    "returnType": "lv_state_t",
+    "params": "const lv_obj_t * obj"
+  },
+  "lv_obj_has_state": {
+    "returnType": "bool",
+    "params": "const lv_obj_t * obj, lv_state_t state"
+  },
+  "lv_obj_add_event_cb": {
+    "returnType": "lv_event_dsc_t *",
+    "params": "lv_obj_t * obj, lv_event_cb_t event_cb, lv_event_code_t filter, void * user_data"
+  },
+  "lv_obj_set_pos": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, int32_t x, int32_t y"
+  },
+  "lv_obj_set_size": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, int32_t w, int32_t h"
+  },
+  "lv_obj_update_layout": {
+    "returnType": "void",
+    "params": "const lv_obj_t * obj"
+  },
+  "lv_obj_invalidate": {
+    "returnType": "void",
+    "params": "const lv_obj_t * obj"
+  },
+  "lv_obj_set_scrollbar_mode": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, lv_scrollbar_mode_t mode"
+  },
+  "lv_obj_set_scroll_dir": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, lv_dir_t dir"
+  },
+  "lv_obj_set_scroll_snap_x": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, lv_scroll_snap_t align"
+  },
+  "lv_obj_set_scroll_snap_y": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, lv_scroll_snap_t align"
+  },
+  "lv_obj_add_style": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, const lv_style_t * style, lv_style_selector_t selector"
+  },
+  "lv_obj_remove_style": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, const lv_style_t * style, lv_style_selector_t selector"
+  },
+  "lv_obj_get_style_prop": {
+    "returnType": "lv_style_value_t",
+    "params": "const lv_obj_t * obj, lv_part_t part, lv_style_prop_t prop"
+  },
+  "lv_obj_set_local_style_prop": {
+    "returnType": "unknown",
+    "params": "unknown"
+  },
+  "lv_obj_delete": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj"
+  },
+  "lv_obj_get_parent": {
+    "returnType": "lv_obj_t *",
+    "params": "const lv_obj_t * obj"
+  },
+  "lv_obj_get_child_by_type": {
+    "returnType": "unknown",
+    "params": "unknown"
+  },
+  "lv_malloc": {
+    "returnType": "=",
+    "params": "src_w * src_h * sizeof(uint16_t"
+  },
+  "lv_color_to_u32": {
+    "returnType": "unknown",
+    "params": "unknown"
+  },
+  "lv_binfont_create": {
+    "returnType": "lv_font_t *",
+    "params": "const char * path"
+  },
+  "lv_indev_set_group": {
+    "returnType": "void",
+    "params": "lv_indev_t * indev, lv_group_t * group"
+  },
+  "lv_qrcode_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_qrcode_set_size": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, int32_t size"
+  },
+  "lv_qrcode_set_dark_color": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, lv_color_t color"
+  },
+  "lv_qrcode_set_light_color": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, lv_color_t color"
+  },
+  "lv_qrcode_update": {
+    "returnType": "lv_result_t",
+    "params": "lv_obj_t * obj, const void * data, uint32_t data_len"
+  },
+  "lv_color_hex": {
+    "returnType": "lv_color_t",
+    "params": "uint32_t c"
+  },
+  "lv_event_get_target": {
+    "returnType": "void *",
+    "params": "lv_event_t * e"
+  },
+  "lv_event_get_code": {
+    "returnType": "lv_event_code_t",
+    "params": "lv_event_t * e"
+  },
+  "lv_event_get_user_data": {
+    "returnType": "void *",
+    "params": "lv_event_t * e"
+  },
+  "lv_ll_get_tail": {
+    "returnType": "void *",
+    "params": "const lv_ll_t * ll_p"
+  },
+  "lv_ll_get_prev": {
+    "returnType": "void *",
+    "params": "const lv_ll_t * ll_p, const void * n_act"
+  },
+  "lv_palette_main": {
+    "returnType": "lv_color_t",
+    "params": "lv_palette_t p"
+  },
+  "lv_style_init": {
+    "returnType": "void",
+    "params": "lv_style_t * style"
+  },
+  "lv_theme_default_init": {
+    "returnType": "unknown",
+    "params": "unknown"
+  },
+  "lv_animimg_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_animimg_set_src": {
+    "returnType": "void",
+    "params": "lv_obj_t * img, const void * dsc[], size_t num"
+  },
+  "lv_animimg_start": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj"
+  },
+  "lv_animimg_set_duration": {
+    "returnType": "void",
+    "params": "lv_obj_t * img, uint32_t duration"
+  },
+  "lv_animimg_set_repeat_count": {
+    "returnType": "void",
+    "params": "lv_obj_t * img, uint32_t count"
+  },
+  "lv_arc_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_arc_set_bg_start_angle": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, lv_value_precise_t start"
+  },
+  "lv_arc_set_bg_end_angle": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, lv_value_precise_t end"
+  },
+  "lv_arc_set_rotation": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, int32_t rotation"
+  },
+  "lv_arc_set_mode": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, lv_arc_mode_t type"
+  },
+  "lv_arc_set_value": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, int32_t value"
+  },
+  "lv_arc_set_range": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, int32_t min, int32_t max"
+  },
+  "lv_arc_get_value": {
+    "returnType": "int32_t",
+    "params": "const lv_obj_t * obj"
+  },
+  "lv_arc_get_min_value": {
+    "returnType": "int32_t",
+    "params": "const lv_obj_t * obj"
+  },
+  "lv_arc_get_max_value": {
+    "returnType": "int32_t",
+    "params": "const lv_obj_t * obj"
+  },
+  "lv_bar_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_bar_set_value": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, int32_t value, lv_anim_enable_t anim"
+  },
+  "lv_bar_set_start_value": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, int32_t start_value, lv_anim_enable_t anim"
+  },
+  "lv_bar_set_range": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, int32_t min, int32_t max"
+  },
+  "lv_bar_set_mode": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, lv_bar_mode_t mode"
+  },
+  "lv_bar_get_value": {
+    "returnType": "int32_t",
+    "params": "const lv_obj_t * obj"
+  },
+  "lv_bar_get_start_value": {
+    "returnType": "int32_t",
+    "params": "const lv_obj_t * obj"
+  },
+  "lv_button_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_buttonmatrix_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_buttonmatrix_set_map": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, const char * const map[]"
+  },
+  "lv_buttonmatrix_set_ctrl_map": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, const lv_buttonmatrix_ctrl_t ctrl_map[]"
+  },
+  "lv_buttonmatrix_set_one_checked": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, bool en"
+  },
+  "lv_calendar_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_calendar_set_today_date": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, uint32_t year, uint32_t month, uint32_t day"
+  },
+  "lv_calendar_set_showed_date": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, uint32_t year, uint32_t month"
+  },
+  "lv_calendar_header_arrow_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_canvas_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_chart_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_checkbox_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_checkbox_set_text": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, const char * txt"
+  },
+  "lv_dropdown_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_dropdown_set_options": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, const char * options"
+  },
+  "lv_dropdown_set_selected": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, uint32_t sel_opt"
+  },
+  "lv_dropdown_set_dir": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, lv_dir_t dir"
+  },
+  "lv_dropdown_set_symbol": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, const void * symbol"
+  },
+  "lv_dropdown_get_list": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * obj"
+  },
+  "lv_dropdown_get_options": {
+    "returnType": "unknown",
+    "params": "unknown"
+  },
+  "lv_dropdown_get_selected": {
+    "returnType": "uint32_t",
+    "params": "const lv_obj_t * obj"
+  },
+  "lv_image_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_image_set_src": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, const void * src"
+  },
+  "lv_image_set_rotation": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, int32_t angle"
+  },
+  "lv_image_set_pivot": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, int32_t x, int32_t y"
+  },
+  "lv_image_set_scale": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, uint32_t zoom"
+  },
+  "lv_image_set_inner_align": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, lv_image_align_t align"
+  },
+  "lv_imagebutton_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_imagebutton_set_src": {
+    "returnType": "unknown",
+    "params": "unknown"
+  },
+  "lv_keyboard_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_keyboard_set_textarea": {
+    "returnType": "void",
+    "params": "lv_obj_t * kb, lv_obj_t * ta"
+  },
+  "lv_keyboard_set_mode": {
+    "returnType": "void",
+    "params": "lv_obj_t * kb, lv_keyboard_mode_t mode"
+  },
+  "lv_label_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_label_set_text": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, const char * text"
+  },
+  "lv_label_set_long_mode": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, lv_label_long_mode_t long_mode"
+  },
+  "lv_label_get_text": {
+    "returnType": "char *",
+    "params": "const lv_obj_t * obj"
+  },
+  "lv_led_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_led_set_color": {
+    "returnType": "void",
+    "params": "lv_obj_t * led, lv_color_t color"
+  },
+  "lv_led_set_brightness": {
+    "returnType": "void",
+    "params": "lv_obj_t * led, uint8_t bright"
+  },
+  "lv_led_get_brightness": {
+    "returnType": "uint8_t",
+    "params": "const lv_obj_t * obj"
+  },
+  "lv_line_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_line_set_points": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, const lv_point_precise_t points[], uint32_t point_num"
+  },
+  "lv_line_set_y_invert": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, bool en"
+  },
+  "lv_list_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_lottie_create": {
+    "returnType": "lv_obj_t  *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_menu_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_msgbox_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_roller_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_roller_set_options": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, const char * options, lv_roller_mode_t mode"
+  },
+  "lv_roller_set_selected": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, uint32_t sel_opt, lv_anim_enable_t anim"
+  },
+  "lv_roller_get_selected": {
+    "returnType": "uint32_t",
+    "params": "const lv_obj_t * obj"
+  },
+  "lv_roller_get_options": {
+    "returnType": "unknown",
+    "params": "unknown"
+  },
+  "lv_roller_get_option_count": {
+    "returnType": "uint32_t",
+    "params": "const lv_obj_t * obj"
+  },
+  "lv_scale_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_scale_set_mode": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, lv_scale_mode_t mode"
+  },
+  "lv_scale_set_total_tick_count": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, uint32_t total_tick_count"
+  },
+  "lv_scale_set_major_tick_every": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, uint32_t major_tick_every"
+  },
+  "lv_scale_set_label_show": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, bool show_label"
+  },
+  "lv_scale_set_range": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, int32_t min, int32_t max"
+  },
+  "lv_slider_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_slider_set_value": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, int32_t value, lv_anim_enable_t anim"
+  },
+  "lv_slider_set_left_value": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, int32_t value, lv_anim_enable_t anim"
+  },
+  "lv_slider_set_range": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, int32_t min, int32_t max"
+  },
+  "lv_slider_set_mode": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, lv_slider_mode_t mode"
+  },
+  "lv_slider_get_value": {
+    "returnType": "int32_t",
+    "params": "const lv_obj_t * obj"
+  },
+  "lv_slider_get_left_value": {
+    "returnType": "int32_t",
+    "params": "const lv_obj_t * obj"
+  },
+  "lv_slider_get_min_value": {
+    "returnType": "int32_t",
+    "params": "const lv_obj_t * obj"
+  },
+  "lv_slider_get_max_value": {
+    "returnType": "int32_t",
+    "params": "const lv_obj_t * obj"
+  },
+  "lv_spangroup_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_spinbox_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_spinbox_set_value": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, int32_t v"
+  },
+  "lv_spinbox_set_rollover": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, bool rollover"
+  },
+  "lv_spinbox_set_digit_format": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, uint32_t digit_count, uint32_t sep_pos"
+  },
+  "lv_spinbox_set_step": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, uint32_t step"
+  },
+  "lv_spinbox_set_range": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, int32_t range_min, int32_t range_max"
+  },
+  "lv_spinbox_get_value": {
+    "returnType": "int32_t",
+    "params": "lv_obj_t * obj"
+  },
+  "lv_spinbox_get_step": {
+    "returnType": "int32_t",
+    "params": "lv_obj_t * obj"
+  },
+  "lv_spinner_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_spinner_set_anim_params": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, uint32_t t, uint32_t angle"
+  },
+  "lv_switch_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_table_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_tabview_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_tabview_add_tab": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * obj, const char * name"
+  },
+  "lv_tabview_rename_tab": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, uint32_t idx, const char * new_name"
+  },
+  "lv_tabview_set_active": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, uint32_t idx, lv_anim_enable_t anim_en"
+  },
+  "lv_tabview_set_tab_bar_position": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, lv_dir_t dir"
+  },
+  "lv_tabview_set_tab_bar_size": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, int32_t size"
+  },
+  "lv_tabview_get_content": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * obj"
+  },
+  "lv_tabview_get_tab_bar": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * obj"
+  },
+  "lv_textarea_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_textarea_set_text": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, const char * txt"
+  },
+  "lv_textarea_set_placeholder_text": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, const char * txt"
+  },
+  "lv_textarea_set_password_mode": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, bool en"
+  },
+  "lv_textarea_set_one_line": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, bool en"
+  },
+  "lv_textarea_set_accepted_chars": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, const char * list"
+  },
+  "lv_textarea_set_max_length": {
+    "returnType": "void",
+    "params": "lv_obj_t * obj, uint32_t num"
+  },
+  "lv_textarea_get_text": {
+    "returnType": "unknown",
+    "params": "unknown"
+  },
+  "lv_textarea_get_max_length": {
+    "returnType": "uint32_t",
+    "params": "lv_obj_t * obj"
+  },
+  "lv_tileview_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  },
+  "lv_win_create": {
+    "returnType": "lv_obj_t *",
+    "params": "lv_obj_t * parent"
+  }
+}

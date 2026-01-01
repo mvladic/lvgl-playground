@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EEZ Script Playground</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .header p {
+            font-size: 0.875rem;
+            opacity: 0.8;
+            margin-top: 0.25rem;
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .editor-panel {
+            width: 40%;
+            background: white;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .toolbar {
+            padding: 0.75rem;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .toolbar select,
+        .toolbar button {
+            padding: 0.5rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .toolbar button {
+            background: #3498db;
+            color: white;
+            border: none;
+            font-weight: 500;
+        }
+
+        .toolbar button:hover {
+            background: #2980b9;
+        }
+
+        .toolbar button.secondary {
+            background: #95a5a6;
+        }
+
+        .toolbar button.secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .code-editor {
+            flex: 1;
+            padding: 1rem;
+            overflow: auto;
+        }
+
+        #scriptInput {
+            width: 100%;
+            height: 100%;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            border: none;
+            outline: none;
+            resize: none;
+            tab-size: 4;
+        }
+
+        .preview-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+
+        .tabs {
+            display: flex;
+            background: #ecf0f1;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .tab:hover {
+            background: #e0e4e6;
+        }
+
+        .tab.active {
+            background: white;
+            border-bottom-color: #3498db;
+            color: #3498db;
+        }
+
+        .tab-content {
+            flex: 1;
+            overflow: auto;
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .canvas-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            height: 100%;
+        }
+
+        #canvas {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid #ddd;
+        }
+
+        .code-output {
+            padding: 1rem;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre;
+            overflow: auto;
+        }
+
+        .error {
+            background: #fee;
+            color: #c00;
+            padding: 1rem;
+            margin: 1rem;
+            border-radius: 4px;
+            border-left: 4px solid #c00;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        .status {
+            padding: 0.5rem 1rem;
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #4caf50;
+            margin: 1rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🚀 EEZ Script Playground</h1>
+        <p>Interactive environment for testing EEZ Script with LVGL</p>
+    </div>
+
+    <div class="container">
+        <div class="editor-panel">
+            <div class="toolbar">
+                <select id="exampleSelect">
+                    <option value="">Select Example...</option>
+                </select>
+                <button onclick="runScript()">▶ Run</button>
+                <button class="secondary" onclick="clearEditor()">Clear</button>
+                <button class="secondary" onclick="saveScript()">💾 Save</button>
+            </div>
+            <div class="code-editor">
+                <textarea id="scriptInput" placeholder="Enter your EEZ Script here..."></textarea>
+            </div>
+        </div>
+
+        <div class="preview-panel">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('canvas')">Canvas</div>
+                <div class="tab" onclick="switchTab('javascript')">Generated JavaScript</div>
+                <div class="tab" onclick="switchTab('c')">Generated C</div>
+            </div>
+
+            <div id="canvasTab" class="tab-content active">
+                <div class="canvas-container">
+                    <canvas id="canvas"></canvas>
+                </div>
+            </div>
+
+            <div id="javascriptTab" class="tab-content">
+                <div id="jsOutput" class="code-output"></div>
+            </div>
+
+            <div id="cTab" class="tab-content">
+                <div id="cOutput" class="code-output"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let module = {};
+        let __dirname = "./node_modules/studio-wasm-libs/release/wasm";
+    </script>
+
+    <script src="./node_modules/studio-wasm-libs/release/wasm/lvgl_runtime_v9.2.2.js"></script>
+
+    <script>
+        const lvglConstructor = module["exports"];
+        module = undefined;
+    </script>
+
+    <script src="./src/eez-script.js"></script>
+    <script src="./src/allowed-functions.js"></script>
+    <script src="./src/playground.js"></script>
+
+    <script>
+        const wasm = lvglConstructor(onWasmLoaded);
+        __dirname = undefined;
+        lvgl = wasm; // Assign to global variable
+    </script>
+
+</body>
+
+</html>
