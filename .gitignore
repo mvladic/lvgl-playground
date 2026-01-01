@@ -2,3 +2,6 @@ node_modules/
 .DS_Store
 *.log
 .vscode/
+
+# Keep wasm files - needed for GitHub Pages
+!wasm/

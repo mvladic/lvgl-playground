@@ -4,7 +4,8 @@
   "description": "Interactive playground for EEZ Script with LVGL",
   "scripts": {
     "dev": "npx live-server .",
-    "start": "npm run dev"
+    "start": "npm run dev",
+    "update-wasm": "cp -r node_modules/studio-wasm-libs/release/wasm/* wasm/"
   },
   "keywords": ["lvgl", "eez-script", "playground", "wasm"],
   "author": "",
