@@ -157,6 +157,9 @@
             resize: none;
             tab-size: 4;
             padding: 1rem;
+            white-space: pre;
+            overflow-x: auto;
+            word-wrap: normal;
         }
 
         .preview-panel {
@@ -164,6 +167,8 @@
             display: flex;
             flex-direction: column;
             background: white;
+            min-width: 0;
+            min-height: 0;
         }
 
         .tabs {
@@ -193,12 +198,14 @@
 
         .tab-content {
             flex: 1;
-            overflow-y: auto;
+            overflow: auto;
             display: none;
+            min-height: 0;
         }
 
         .tab-content.active {
-            display: block;
+            display: flex;
+            flex-direction: column;
         }
 
         #canvasTab {
@@ -206,16 +213,19 @@
         }
 
         .canvas-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
             padding: 2rem;
-            height: 100%;
+            overflow: auto;
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-start;
+            flex: 1;
+            min-height: 0;
         }
 
         #canvas {
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             border: 1px solid #ddd;
+            margin: auto;
         }
 
         .code-output {
@@ -226,6 +236,8 @@
             line-height: 1.6;
             white-space: pre;
             overflow: auto;
+            flex: 1;
+            min-height: 0;
         }
 
         .error {
@@ -279,7 +291,7 @@
             </div>
             <div class="code-editor">
                 <button class="copy-button" onclick="copyToClipboard('scriptInput')">📋 Copy</button>
-                <textarea id="scriptInput" placeholder="Enter your EEZ Script here..."></textarea>
+                <textarea id="scriptInput" placeholder="Enter your EEZ Script here..." spellcheck="false"></textarea>
             </div>
         </div>
 
@@ -288,8 +300,8 @@
         <div class="preview-panel">
             <div class="tabs">
                 <div class="tab active" onclick="switchTab('canvas')">Canvas</div>
-                <div class="tab" onclick="switchTab('javascript')">Generated JavaScript</div>
-                <div class="tab" onclick="switchTab('c')">Generated C</div>
+                <div class="tab" onclick="switchTab('javascript')">JavaScript</div>
+                <div class="tab" onclick="switchTab('c')">C</div>
             </div>
 
             <div id="canvasTab" class="tab-content active">
