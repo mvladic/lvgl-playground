@@ -1530,27 +1530,42 @@ function eez_script_compile(script) {
     };
 }
 
-// JavaScript code emitter - converts AST to JavaScript code
-function emitJS(ast, allowedFunctions) {
-    // Track variable and parameter types for cstring conversion
+// Shared type inference - collects type information from AST
+function collectTypeInformation(ast) {
     const varTypes = {};
     const funcParamTypes = {};
-
-    // Build function type map from allowedFunctions
     const functionTypeMap = {};
-    if (allowedFunctions && typeof allowedFunctions === 'object') {
-        for (const funcName in allowedFunctions) {
-            const funcSpec = allowedFunctions[funcName];
-            if (funcSpec && funcSpec.params && funcSpec.returnType) {
-                functionTypeMap[funcName] = {
-                    params: funcSpec.params,
-                    returnType: funcSpec.returnType
-                };
+
+    // Helper to infer type from an expression during type collection
+    function inferTypeFromInit(expr) {
+        if (!expr) return null;
+
+        // If it's a call expression, try to get the return type
+        if (expr.type === 'CallExpression' && expr.callee.type === 'Identifier') {
+            const functionName = expr.callee.name;
+
+            // Check in functionTypeMap for return type
+            if (functionTypeMap[functionName]) {
+                return functionTypeMap[functionName].returnType;
             }
         }
+
+        // If it's a literal, infer from the literal type
+        if (expr.type === 'Literal') {
+            if (typeof expr.value === 'number') return 'number';
+            if (typeof expr.value === 'boolean') return 'bool';
+            if (typeof expr.value === 'string') return 'string';
+        }
+
+        // If it's an identifier, look up its type
+        if (expr.type === 'Identifier') {
+            return varTypes[expr.name] || null;
+        }
+
+        return null;
     }
 
-    // First pass: collect type information
+    // Traverse AST to collect type information
     function collectTypes(node, currentFunc = null) {
         if (!node) return;
 
@@ -1567,9 +1582,16 @@ function emitJS(ast, allowedFunctions) {
             }
             collectTypes(node.body, node.name);
         } else if (node.type === 'VariableDeclaration') {
+            const key = currentFunc ? `${currentFunc}.${node.name}` : node.name;
+
+            // Use explicit type if provided, otherwise try to infer
             if (node.varType) {
-                const key = currentFunc ? `${currentFunc}.${node.name}` : node.name;
                 varTypes[key] = node.varType;
+            } else if (node.init) {
+                const inferredType = inferTypeFromInit(node.init);
+                if (inferredType) {
+                    varTypes[key] = inferredType;
+                }
             }
         } else if (node.type === 'BlockStatement') {
             node.body.forEach(stmt => collectTypes(stmt, currentFunc));
@@ -1581,12 +1603,31 @@ function emitJS(ast, allowedFunctions) {
             collectTypes(node.body, currentFunc);
         } else if (node.type === 'WhileStatement') {
             collectTypes(node.body, currentFunc);
-        } else if (node.type === 'ExpressionStatement') {
-            // Don't need to recurse into expressions for type collection
+        }
+    }
+
+    // Build function type map from allowedFunctions
+    if (allowedFunctions && typeof allowedFunctions === 'object') {
+        for (const funcName in allowedFunctions) {
+            const funcSpec = allowedFunctions[funcName];
+            if (funcSpec && funcSpec.params && funcSpec.returnType) {
+                functionTypeMap[funcName] = {
+                    params: funcSpec.params,
+                    returnType: funcSpec.returnType
+                };
+            }
         }
     }
 
     collectTypes(ast);
+
+    return { varTypes, funcParamTypes, functionTypeMap };
+}
+
+// JavaScript code emitter - converts AST to JavaScript code
+function emitJS(ast, allowedFunctions) {
+    // Collect type information (explicit and inferred)
+    const { varTypes, funcParamTypes, functionTypeMap } = collectTypeInformation(ast);
 
     function getIdentifierType(name, context) {
         // Check if it's a parameter of the current function
@@ -1818,59 +1859,8 @@ function emitJS(ast, allowedFunctions) {
 
 // C code emitter - converts AST to C code
 function emitC(ast, allowedFunctions) {
-    // Track variable and parameter types
-    const varTypes = {};
-    const funcParamTypes = {};
-
-    // Build function type map from allowedFunctions
-    const functionTypeMap = {};
-    if (allowedFunctions && typeof allowedFunctions === 'object') {
-        for (const funcName in allowedFunctions) {
-            const funcSpec = allowedFunctions[funcName];
-            if (funcSpec && funcSpec.params && funcSpec.returnType) {
-                functionTypeMap[funcName] = {
-                    params: funcSpec.params,
-                    returnType: funcSpec.returnType
-                };
-            }
-        }
-    }
-
-    // First pass: collect type information
-    function collectTypes(node, currentFunc = null) {
-        if (!node) return;
-
-        if (node.type === 'Program') {
-            node.body.forEach(stmt => collectTypes(stmt));
-        } else if (node.type === 'FunctionDeclaration') {
-            if (node.params) {
-                funcParamTypes[node.name] = {};
-                node.params.forEach(p => {
-                    if (p.type) {
-                        funcParamTypes[node.name][p.name] = p.type;
-                    }
-                });
-            }
-            collectTypes(node.body, node.name);
-        } else if (node.type === 'VariableDeclaration') {
-            if (node.varType) {
-                const key = currentFunc ? `${currentFunc}.${node.name}` : node.name;
-                varTypes[key] = node.varType;
-            }
-        } else if (node.type === 'BlockStatement') {
-            node.body.forEach(stmt => collectTypes(stmt, currentFunc));
-        } else if (node.type === 'IfStatement') {
-            collectTypes(node.consequent, currentFunc);
-            collectTypes(node.alternate, currentFunc);
-        } else if (node.type === 'ForStatement') {
-            collectTypes(node.init, currentFunc);
-            collectTypes(node.body, currentFunc);
-        } else if (node.type === 'WhileStatement') {
-            collectTypes(node.body, currentFunc);
-        }
-    }
-
-    collectTypes(ast);
+    // Collect type information (explicit and inferred)
+    const { varTypes, funcParamTypes, functionTypeMap } = collectTypeInformation(ast);
 
     function getIdentifierType(name, context) {
         // Check if it's a parameter of the current function
@@ -1933,7 +1923,10 @@ function emitC(ast, allowedFunctions) {
                 return `${indentStr}${returnType} ${node.name}(${params}) ${fnBody}`;
 
             case 'VariableDeclaration':
-                const varType = mapTypeToCType(node.varType);
+                // Get type from collected types (either explicit or inferred)
+                const key = context.currentFunction ? `${context.currentFunction}.${node.name}` : node.name;
+                const collectedType = varTypes[key];
+                const varType = mapTypeToCType(collectedType);
                 let varInit = '';
                 if (node.init) {
                     varInit = ' = ' + emit(node.init, 0, context);
@@ -1943,15 +1936,15 @@ function emitC(ast, allowedFunctions) {
             case 'ExpressionStatement':
                 // Check if this is a call with string concatenation that needs preprocessing
                 let preamble = '';
-                
+
                 if (node.expression.type === 'CallExpression') {
                     const callNode = node.expression;
-                    
+
                     // Check each argument for string concatenation
                     callNode.arguments.forEach((arg, index) => {
                         if (arg.type === 'BinaryExpression' && arg.operator === '+') {
                             const parts = [];
-                            
+
                             function collectParts(n) {
                                 if (n.type === 'BinaryExpression' && n.operator === '+') {
                                     collectParts(n.left);
@@ -1960,26 +1953,26 @@ function emitC(ast, allowedFunctions) {
                                     parts.push(n);
                                 }
                             }
-                            
+
                             collectParts(arg);
-                            
-                            const hasStringLiteral = parts.some(p => 
+
+                            const hasStringLiteral = parts.some(p =>
                                 p.type === 'Literal' && typeof p.value === 'string'
                             );
-                            
+
                             if (hasStringLiteral && parts.length > 1) {
                                 // Generate format string and args
                                 let formatStr = '';
                                 const sprintfArgs = [];
-                                
+
                                 parts.forEach(part => {
                                     if (part.type === 'Literal' && typeof part.value === 'string') {
                                         formatStr += part.value;
                                     } else {
-                                        const partType = part.type === 'Identifier' 
-                                            ? getIdentifierType(part.name, context) 
+                                        const partType = part.type === 'Identifier'
+                                            ? getIdentifierType(part.name, context)
                                             : 'number';
-                                        
+
                                         if (partType === 'number' || !partType) {
                                             formatStr += '%d';
                                         } else if (partType === 'string' || partType === 'cstring') {
@@ -1987,27 +1980,27 @@ function emitC(ast, allowedFunctions) {
                                         } else {
                                             formatStr += '%d';
                                         }
-                                        
+
                                         sprintfArgs.push(emit(part, 0, context));
                                     }
                                 });
-                                
+
                                 const bufferName = `_str_buf`;
                                 const argsStr = sprintfArgs.length > 0 ? ', ' + sprintfArgs.join(', ') : '';
-                                
+
                                 // Store buffer info in context for CallExpression to use
                                 if (!context.stringBuffers) {
                                     context.stringBuffers = new Map();
                                 }
                                 context.stringBuffers.set(arg, bufferName);
-                                
+
                                 preamble += `${indentStr}static char ${bufferName}[256];\n`;
                                 preamble += `${indentStr}snprintf(${bufferName}, sizeof(${bufferName}), "${formatStr}"${argsStr});\n`;
                             }
                         }
                     });
                 }
-                
+
                 return preamble + `${indentStr}${emit(node.expression, 0, context)};`;
 
             case 'BlockStatement':
@@ -2043,12 +2036,12 @@ function emitC(ast, allowedFunctions) {
                 if (context.stringBuffers && context.stringBuffers.has(node)) {
                     return context.stringBuffers.get(node);
                 }
-                
+
                 // Handle logical operators - map to C equivalents
                 let op = node.operator;
                 if (op === '&&') op = '&&';
                 if (op === '||') op = '||';
-                
+
                 // For + operator with string concatenation, it should have been
                 // handled in ExpressionStatement. If we reach here, emit as-is
                 return `${emit(node.left, 0, context)} ${op} ${emit(node.right, 0, context)}`;
@@ -2086,7 +2079,7 @@ function emitC(ast, allowedFunctions) {
                     if (context.stringBuffers && context.stringBuffers.has(arg)) {
                         return context.stringBuffers.get(arg);
                     }
-                    
+
                     let argCode = emit(arg, 0, context);
 
                     // Check if this parameter expects lv_color
