@@ -1350,6 +1350,32 @@ test('C gen: complete event handler example', () => {
     assert(cCode.includes('lv_label_set_text(labelObj, _str_buf)'), 'Should pass buffer to function');
 });
 
+test('C gen: function parameter type', () => {
+    const code = `
+        function callback1(event: number) {
+            let x: number = 0;
+        }
+        
+        function callback2(e: number) {
+            let y: number = 1;
+        }
+        
+        function register_handler(obj: lv_obj, handler: function) {
+            lv_obj_add_event_cb(obj, handler, 7, 0);
+        }
+    `;
+    const script = eez_script_compile(code);
+    const cCode = script.emitC();
+    
+    // Check that function parameter generates lv_event_cb_t type
+    assert(cCode.includes('lv_event_cb_t handler'), 'Function parameter should generate lv_event_cb_t type');
+    assert(cCode.includes('void register_handler(lv_obj_t* obj, lv_event_cb_t handler)'), 'Should have correct function signature with lv_event_cb_t');
+    
+    // Check that event callbacks still get lv_event_t* signature
+    assert(cCode.includes('void callback1(lv_event_t* event)'), 'Single-param number should still be lv_event_t* for event callbacks');
+    assert(cCode.includes('void callback2(lv_event_t* e)'), 'Single-param number should still be lv_event_t* for event callbacks');
+});
+
 // ============================================================================
 // SUMMARY
 // ============================================================================

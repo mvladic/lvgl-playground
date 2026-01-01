@@ -330,6 +330,8 @@ class Parser {
             return 'cstring';
         } else if (token.type === 'TYPE_LV_COLOR') {
             return 'lv_color';
+        } else if (token.type === 'FUNCTION') {
+            return 'function';
         } else if (token.type === 'IDENTIFIER') {
             return token.value; // Custom type like lv_obj
         } else {
@@ -1896,6 +1898,7 @@ function emitC(ast, allowedFunctions) {
             case 'cstring': return 'const char*';
             case 'lv_obj': return 'lv_obj_t*';
             case 'lv_color': return 'lv_color_t';
+            case 'function': return 'lv_event_cb_t';
             default:
                 // Custom types like lv_obj
                 if (type.startsWith('lv_')) {

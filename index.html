@@ -50,6 +50,31 @@
             border-right: 1px solid #ddd;
             display: flex;
             flex-direction: column;
+            min-width: 20%;
+            max-width: 80%;
+        }
+
+        .splitter {
+            width: 5px;
+            background: #ddd;
+            cursor: col-resize;
+            flex-shrink: 0;
+            position: relative;
+            transition: background 0.2s;
+        }
+
+        .splitter:hover,
+        .splitter.dragging {
+            background: #3498db;
+        }
+
+        .splitter::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -2px;
+            right: -2px;
+            bottom: 0;
         }
 
         .toolbar {
@@ -93,6 +118,32 @@
         .code-editor {
             flex: 1;
             display: flex;
+            position: relative;
+        }
+
+        .copy-button {
+            position: absolute;
+            top: 0.5rem;
+            right: 1.5rem;
+            padding: 0.4rem 0.8rem;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 500;
+            z-index: 10;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+
+        .copy-button:hover {
+            opacity: 1;
+        }
+
+        .copy-button.copied {
+            background: #27ae60;
         }
 
         #scriptInput {
@@ -168,6 +219,7 @@
         }
 
         .code-output {
+            position: relative;
             padding: 1rem;
             font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
             font-size: 13px;
@@ -226,9 +278,12 @@
                 <button class="secondary" onclick="saveScript()">💾 Save</button>
             </div>
             <div class="code-editor">
+                <button class="copy-button" onclick="copyToClipboard('scriptInput')">📋 Copy</button>
                 <textarea id="scriptInput" placeholder="Enter your EEZ Script here..."></textarea>
             </div>
         </div>
+
+        <div class="splitter" id="splitter"></div>
 
         <div class="preview-panel">
             <div class="tabs">
@@ -244,11 +299,17 @@
             </div>
 
             <div id="javascriptTab" class="tab-content">
-                <div id="jsOutput" class="code-output"></div>
+                <div class="code-output">
+                    <button class="copy-button" onclick="copyToClipboard('jsOutputContent')">📋 Copy</button>
+                    <div id="jsOutput"></div>
+                </div>
             </div>
 
             <div id="cTab" class="tab-content">
-                <div id="cOutput" class="code-output"></div>
+                <div class="code-output">
+                    <button class="copy-button" onclick="copyToClipboard('cOutputContent')">📋 Copy</button>
+                    <div id="cOutput"></div>
+                </div>
             </div>
         </div>
     </div>

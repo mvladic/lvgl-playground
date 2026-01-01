@@ -726,7 +726,7 @@ function go_to_home(event: number) {
 }
 
 // Create navigation button helper
-function create_nav_button(parent: lv_obj, text: string, x: number, y: number, handler) {
+function create_nav_button(parent: lv_obj, text: string, x: number, y: number, handler: function): lv_obj {
     let btn: lv_obj = lv_button_create(parent);
     lv_obj_set_pos(btn, x, y);
     lv_obj_set_size(btn, 200, 50);
@@ -1002,6 +1002,79 @@ function runScript() {
 }
 window.runScript = runScript;
 
+// Copy to clipboard functionality
+function copyToClipboard(elementId) {
+    // Map content IDs to actual output element IDs
+    const actualId = elementId.replace('Content', '');
+    const element = document.getElementById(actualId);
+    let text;
+    
+    if (element.tagName === 'TEXTAREA' || element.tagName === 'INPUT') {
+        text = element.value;
+    } else {
+        text = element.textContent;
+    }
+    
+    navigator.clipboard.writeText(text).then(() => {
+        // Find the copy button - it's a sibling in the parent container
+        const button = element.tagName === 'TEXTAREA' 
+            ? element.parentElement.querySelector('.copy-button')
+            : element.parentElement.querySelector('.copy-button');
+        
+        if (button) {
+            const originalText = button.textContent;
+            button.textContent = '✓ Copied!';
+            button.classList.add('copied');
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.classList.remove('copied');
+            }, 2000);
+        }
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        alert('Failed to copy to clipboard');
+    });
+}
+window.copyToClipboard = copyToClipboard;
+
+// Splitter functionality
+function initSplitter() {
+    const splitter = document.getElementById('splitter');
+    const editorPanel = document.querySelector('.editor-panel');
+    const container = document.querySelector('.container');
+    let isDragging = false;
+
+    splitter.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        splitter.classList.add('dragging');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+
+        const containerRect = container.getBoundingClientRect();
+        const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+        
+        // Constrain between 20% and 80%
+        if (newWidth >= 20 && newWidth <= 80) {
+            editorPanel.style.width = newWidth + '%';
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (isDragging) {
+            isDragging = false;
+            splitter.classList.remove('dragging');
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        }
+    });
+}
+
 // Load saved script on page load
 function loadSavedScript() {
     const saved = localStorage.getItem('eez_script_saved');
@@ -1012,3 +1085,8 @@ function loadSavedScript() {
         document.getElementById('scriptInput').value = EXAMPLE_SCRIPTS['dashboard'].code;
     }
 }
+
+// Initialize on page load
+window.addEventListener('DOMContentLoaded', () => {
+    initSplitter();
+});
