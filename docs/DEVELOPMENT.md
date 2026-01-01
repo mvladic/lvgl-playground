@@ -4,6 +4,8 @@
 
 This is an interactive playground for **EEZ Script**, a TypeScript-inspired scripting language that compiles to JavaScript and C for use with LVGL (Light and Versatile Graphics Library) v9.2.2 compiled to WebAssembly.
 
+The browser UI is driven by [index.html](../index.html) and the runtime lives under [src/](../src).
+
 ## EEZ Script Language
 
 ### Type System
@@ -65,7 +67,7 @@ let led_color = (() => {
 
 ### Compiler Architecture
 
-The `eez-script.js` file contains:
+The [src/eez-script.js](../src/eez-script.js) file contains:
 
 1. **Lexer** - Tokenizes source code
 2. **Parser** - Builds AST (Abstract Syntax Tree)
@@ -95,22 +97,14 @@ Used in `visitCallExpression()` to wrap arguments with conversion functions when
   - JavaScript - Generated JS code
   - C - Generated C code
 - **Examples Dropdown**: 10 pre-built example scripts
+- **Examples Dropdown**: example scripts from [src/examples.js](../src/examples.js)
 - **Run Button**: Compile and execute current script
 - **LocalStorage**: Auto-saves code between sessions
+ - **Help Tab**: API-driven help generated from the LVGL whitelist
 
 ### Example Scripts
 
-Located in `EXAMPLE_SCRIPTS` object in `index.html`:
-1. Hello World - Basic label
-2. Button - Interactive button with label
-3. Slider - Range input widget
-4. Dashboard - Complex multi-widget layout
-5. LED Colors - Color demonstration
-6. Arc Gauge - Circular progress widget
-7. Switch - Toggle widget
-8. Checkbox - Checkbox widget
-9. Dropdown - Selection widget
-10. Simple - Minimal example
+Defined in the `EXAMPLE_SCRIPTS` object in [src/examples.js](../src/examples.js) and loaded into the dropdown by [src/playground.js](../src/playground.js).
 
 ### Global Variables
 
@@ -130,20 +124,28 @@ Located in `EXAMPLE_SCRIPTS` object in `index.html`:
 
 ## File Structure
 
-- `index.html` - Main UI and orchestration
-- `eez-script.js` - Complete EEZ Script compiler/interpreter
-- `allowed_functions.js` - LVGL function signatures (optional, duplicated in HTML)
-- `test-eez-script.js` - Unit tests for compiler
-- `run.sh` - Development server launcher
-- `package.json` - NPM scripts
+- [index.html](../index.html) - Main UI and orchestration
+- [src/eez-script.js](../src/eez-script.js) - EEZ Script compiler/interpreter
+- [src/eez-script.d.ts](../src/eez-script.d.ts) - TypeScript typings for editor IntelliSense
+- [src/playground.js](../src/playground.js) - Playground glue (tabs, example dropdown, help generation)
+- [src/examples.js](../src/examples.js) - Example scripts shown in the dropdown
+- [src/lvgl-functions.js](../src/lvgl-functions.js) - LVGL function whitelist + type signatures
+- [src/lvgl-constants.js](../src/lvgl-constants.js) - LVGL constants used by EEZ Script
+- [test-eez-script.js](../test-eez-script.js) - Compiler/runtime tests
+- [package.json](../package.json) - NPM scripts
 
 ## WASM Integration
 
-The playground expects LVGL WASM runtime at `/wasm/lvgl_runtime_v9.2.2.js` (virtual mount point).
+The playground loads the LVGL WASM runtime from the repo-local [wasm/](../wasm) folder (for GitHub Pages compatibility).
 
-When running with live-server:
+To update the checked-in WASM artifacts from a local `studio-wasm-libs` checkout:
 ```bash
-npx live-server --mount=/wasm:../studio-wasm-libs/release/wasm
+npm run update-wasm
+```
+
+To run the playground locally:
+```bash
+npm run dev
 ```
 
 ## Key Design Decisions
