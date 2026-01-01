@@ -1,6 +1,8 @@
 const LVGL_CONSTANTS = {
     LV_SCR_LOAD_ANIM_FADE_IN: 9,
     LV_SIZE_CONTENT: 1073741823,
+    // Direction flags (lv_dir_t)
+    LV_DIR_TOP: 4,
     LV_ALIGN_CENTER: 9,
     LV_ALIGN_TOP_LEFT: 0,
     LV_ALIGN_TOP_MID: 1,

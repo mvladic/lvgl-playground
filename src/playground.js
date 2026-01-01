@@ -246,6 +246,228 @@ function initExamples() {
     });
 }
 
+// ============================================================================
+// Help Tab - Generate docs from allowedFunctions
+// ============================================================================
+
+function initHelp() {
+    const container = document.getElementById('helpContent');
+    const toc = document.getElementById('helpToc');
+    if (!container || !toc) return;
+
+    if (typeof allowedFunctions === 'undefined' || !allowedFunctions) {
+        container.textContent = 'Help generation failed: allowedFunctions is not available.';
+        toc.textContent = '';
+        return;
+    }
+
+    const entries = Object.entries(allowedFunctions);
+    if (entries.length === 0) {
+        container.textContent = 'No LVGL functions are whitelisted (allowedFunctions is empty).';
+        toc.textContent = '';
+        return;
+    }
+
+    // Group by prefix: lv_obj_*, lv_label_*, lv_slider_* ...
+    const groups = new Map();
+    for (const [name, spec] of entries) {
+        const parts = name.split('_');
+        const prefix = parts.length >= 2 ? `${parts[0]}_${parts[1]}` : parts[0];
+        if (!groups.has(prefix)) groups.set(prefix, []);
+        groups.get(prefix).push({ name, spec });
+    }
+
+    const preferredOrder = [
+        'lv_obj',
+        'lv_screen',
+        'lv_event',
+        'lv_group',
+        'lv_color',
+        'lv_style',
+        'lv_theme',
+        'lv_palette',
+        'lv_malloc'
+    ];
+
+    const toTitle = (prefix) => {
+        const raw = prefix.replace(/^lv_/, '');
+        if (raw === 'obj') return 'Object (lv_obj)';
+        if (raw === 'screen') return 'Screen (lv_screen)';
+        if (raw === 'event') return 'Events (lv_event)';
+        if (raw === 'msgbox') return 'Message Box (lv_msgbox)';
+        if (raw === 'animimg') return 'Animated Image (lv_animimg)';
+        return raw
+            .split('_')
+            .map(s => s.charAt(0).toUpperCase() + s.slice(1))
+            .join(' ') + ` (${prefix})`;
+    };
+
+    const exampleForType = (type) => {
+        switch (type) {
+            case 'lv_obj':
+                return 'obj';
+            case 'number':
+                return '0';
+            case 'bool':
+                return 'false';
+            case 'cstring':
+            case 'string':
+                return '"text"';
+            case 'lv_color':
+                return '0xFF0000';
+            case 'function':
+                return 'on_event';
+            default:
+                return '0';
+        }
+    };
+
+    const typeLabel = (type) => type || 'number';
+
+    const emitSignature = (fnName, spec) => {
+        const params = (spec.params || []).map((t, i) => `arg${i + 1}: ${typeLabel(t)}`).join(', ');
+        const ret = spec.returnType ? typeLabel(spec.returnType) : 'number';
+        return `${fnName}(${params}) -> ${ret}`;
+    };
+
+    const inferVarName = (prefix) => {
+        const raw = prefix.replace(/^lv_/, '');
+        if (raw === 'obj') return 'obj';
+        if (raw === 'screen') return 'screen';
+        return raw;
+    };
+
+    const emitExampleLine = (fnName, spec, prefix) => {
+        const params = spec.params || [];
+
+        const isCreate = fnName.endsWith('_create') && params.length >= 1 && params[0] === 'lv_obj';
+        const args = params.map((t, i) => {
+            if (fnName === 'lv_obj_create' && i === 0) return '0';
+            if (isCreate && i === 0) return 'screen';
+            if (t === 'lv_obj') return i === 0 ? 'obj' : 'obj';
+            return exampleForType(t);
+        });
+
+        if (spec.returnType === 'lv_obj') {
+            const v = inferVarName(prefix);
+            if (isCreate) {
+                return `let ${v}: lv_obj = ${fnName}(${args.join(', ')});`;
+            }
+            return `let tmp: lv_obj = ${fnName}(${args.join(', ')});`;
+        }
+
+        return `${fnName}(${args.join(', ')});`;
+    };
+
+    const groupKeys = Array.from(groups.keys());
+    groupKeys.sort((a, b) => {
+        const ai = preferredOrder.indexOf(a);
+        const bi = preferredOrder.indexOf(b);
+        if (ai !== -1 || bi !== -1) {
+            if (ai === -1) return 1;
+            if (bi === -1) return -1;
+            return ai - bi;
+        }
+        return a.localeCompare(b);
+    });
+
+    container.innerHTML = '';
+    toc.innerHTML = '';
+
+    const tocButtons = [];
+    const addTocItem = (label, targetId) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = label;
+        btn.addEventListener('click', () => {
+            const target = document.getElementById(targetId);
+            if (!target) return;
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            tocButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
+        toc.appendChild(btn);
+        tocButtons.push(btn);
+        return btn;
+    };
+
+    const intro = document.createElement('div');
+    intro.className = 'help-section';
+    intro.id = 'help_topic_boilerplate';
+    intro.innerHTML = `
+        <h3>Boilerplate: start a screen</h3>
+        <div class="help-snippet">
+            <button class="copy-button" onclick="copyToClipboard('help_snippet_boilerplate')">Copy</button>
+            <pre id="help_snippet_boilerplate">function init(): lv_obj {
+    let screen: lv_obj = lv_obj_create(0);
+    lv_screen_load_anim(screen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
+    return screen;
+}</pre>
+        </div>
+    `;
+    container.appendChild(intro);
+    addTocItem('Boilerplate', intro.id).classList.add('active');
+
+    for (const prefix of groupKeys) {
+        const items = groups.get(prefix);
+        items.sort((a, b) => a.name.localeCompare(b.name));
+
+        const section = document.createElement('div');
+        section.className = 'help-section';
+        section.id = `help_topic_${prefix.replace(/[^a-z0-9_]/gi, '_')}`;
+
+        const title = document.createElement('h3');
+        title.textContent = toTitle(prefix);
+        section.appendChild(title);
+
+        const sigList = document.createElement('ul');
+        for (const { name, spec } of items) {
+            const li = document.createElement('li');
+            const code = document.createElement('code');
+            code.textContent = emitSignature(name, spec);
+            li.appendChild(code);
+            sigList.appendChild(li);
+        }
+        section.appendChild(sigList);
+
+        const snippetId = `help_snippet_${prefix.replace(/[^a-z0-9_]/gi, '_')}`;
+        const hasEventCb = items.some(x => (x.spec.params || []).includes('function'));
+
+        let snippet = '';
+        if (hasEventCb) {
+            snippet += `function on_event(event: number) {\n    // Use lv_event_get_target(event), lv_event_get_code(event), ...\n}\n\n`;
+        }
+
+        snippet += `function init(): lv_obj {\n`;
+        snippet += `    let screen: lv_obj = lv_obj_create(0);\n`;
+        snippet += `    lv_screen_load_anim(screen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);\n\n`;
+
+        const createItem = items.find(x => x.name === `${prefix}_create`);
+        if (createItem) {
+            snippet += `    ${emitExampleLine(createItem.name, createItem.spec, prefix)}\n\n`;
+        }
+
+        for (const { name, spec } of items) {
+            if (createItem && name === createItem.name) continue;
+            snippet += `    ${emitExampleLine(name, spec, prefix)}\n`;
+        }
+
+        snippet += `\n    return screen;\n}`;
+
+        const snippetWrap = document.createElement('div');
+        snippetWrap.className = 'help-snippet';
+        snippetWrap.innerHTML = `
+            <button class="copy-button" onclick="copyToClipboard('${snippetId}')">Copy</button>
+            <pre id="${snippetId}"></pre>
+        `;
+        snippetWrap.querySelector('pre').textContent = snippet;
+        section.appendChild(snippetWrap);
+
+        container.appendChild(section);
+        addTocItem(toTitle(prefix), section.id);
+    }
+}
+
 // Tab switching
 function switchTab(tabName) {
     // Update tab buttons
@@ -481,4 +703,5 @@ function loadSavedScript() {
 // Initialize on page load
 window.addEventListener('DOMContentLoaded', () => {
     initSplitter();
+    initHelp();
 });

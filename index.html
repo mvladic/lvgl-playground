@@ -270,6 +270,126 @@
             font-size: 0.875rem;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
+
+        /* Help tab */
+        .help-container {
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .help-layout {
+            display: flex;
+            gap: 1rem;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .help-toc {
+            width: 280px;
+            flex: 0 0 280px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            overflow: auto;
+            min-height: 0;
+            padding: 0.75rem;
+        }
+
+        .help-toc h3 {
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+        }
+
+        .help-toc button {
+            width: 100%;
+            text-align: left;
+            padding: 0.4rem 0.5rem;
+            border: none;
+            border-radius: 4px;
+            background: transparent;
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: #2c3e50;
+        }
+
+        .help-toc button:hover {
+            background: #ecf0f1;
+        }
+
+        .help-toc button.active {
+            background: #ecf0f1;
+            font-weight: 600;
+        }
+
+        .help-content {
+            flex: 1;
+            min-width: 0;
+            min-height: 0;
+            overflow: auto;
+            padding-right: 0.25rem;
+        }
+
+        .help-container h2 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .help-container p {
+            margin-bottom: 0.75rem;
+            color: #2c3e50;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+
+        .help-section {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .help-section h3 {
+            font-size: 1.05rem;
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+        }
+
+        .help-section ul {
+            margin-left: 1.2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .help-section li {
+            margin: 0.25rem 0;
+            line-height: 1.45;
+        }
+
+        .help-snippet {
+            position: relative;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #f8f9fa;
+            overflow: hidden;
+        }
+
+        .help-snippet pre {
+            margin: 0;
+            padding: 1rem;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre;
+            overflow: auto;
+        }
+
+        .help-snippet .copy-button {
+            top: 0.5rem;
+            right: 0.5rem;
+        }
     </style>
 </head>
 
@@ -302,6 +422,7 @@
                 <div class="tab active" onclick="switchTab('canvas')">Canvas</div>
                 <div class="tab" onclick="switchTab('javascript')">JavaScript</div>
                 <div class="tab" onclick="switchTab('c')">C</div>
+                <div class="tab" onclick="switchTab('help')">Help</div>
             </div>
 
             <div id="canvasTab" class="tab-content active">
@@ -321,6 +442,30 @@
                 <div class="code-output">
                     <button class="copy-button" onclick="copyToClipboard('cOutputContent')">📋 Copy</button>
                     <div id="cOutput"></div>
+                </div>
+            </div>
+
+            <div id="helpTab" class="tab-content">
+                <div class="help-container">
+                    <h2>Playground Help</h2>
+                    <p>
+                        This page is generated from <code>src/lvgl-functions.js</code> (the whitelist of LVGL APIs
+                        available to EEZ Script in this playground). It groups functions by prefix (usually a widget
+                        name) and generates copy/paste-ready EEZ Script snippets.
+                    </p>
+                    <p>
+                        Notes: <strong>string → cstring</strong> conversions are automatic for relevant LVGL calls.
+                        Colors can be passed as hex numbers like <code>0xFF0000</code> and will be converted when
+                        a function expects <code>lv_color</code>.
+                    </p>
+
+                    <div class="help-layout">
+                        <div class="help-toc">
+                            <h3>Contents</h3>
+                            <div id="helpToc"></div>
+                        </div>
+                        <div class="help-content" id="helpContent"></div>
+                    </div>
                 </div>
             </div>
         </div>
