@@ -5,12 +5,11 @@
   "scripts": {
     "dev": "npx live-server .",
     "start": "npm run dev",
-    "update-wasm": "cp -r node_modules/studio-wasm-libs/release/wasm/* wasm/"
+    "update-wasm": "cp -r ../studio-wasm-libs/release/wasm/* wasm/"
   },
   "keywords": ["lvgl", "eez-script", "playground", "wasm"],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "studio-wasm-libs": "github:eez-open/studio-wasm-libs"
   }
 }

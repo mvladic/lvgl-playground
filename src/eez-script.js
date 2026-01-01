@@ -741,6 +741,7 @@ class Interpreter {
         this.sourceCode = '';
         this.currentNode = null;
         this._colorBuffer = null; // Pre-allocated buffer for lv_color operations
+        this.eventManager = null; // Will be set by runtime if event handling is supported
     }
 
     // Recursively process globals object to extract functions and type info
@@ -889,6 +890,7 @@ class Interpreter {
         if (typeof value === 'number') return 'number';
         if (typeof value === 'boolean') return 'bool';
         if (typeof value === 'string') return 'string';
+        if (typeof value === 'function') return 'function';
         if (value === null) return 'null';
         if (value === undefined) return 'undefined';
         // Check if it's an LVGL object (represented as object with type property)
@@ -904,6 +906,8 @@ class Interpreter {
 
     isTypeCompatible(actualType, expectedType) {
         if (expectedType === actualType) return true;
+        // Function types are compatible
+        if (expectedType === 'function' && actualType === 'function') return true;
         // All lv_* widget types are compatible with lv_obj
         if (expectedType === 'lv_obj' && actualType.startsWith('lv_')) return true;
         // lv_obj is also compatible with number (since it's represented as pointer/number in C)
@@ -1267,7 +1271,8 @@ class Interpreter {
                     args[i] = this._colorBuffer;
                 }
                 else if (!this.isTypeCompatible(actualType, expectedType)) {
-                    throw this.createRuntimeError(`Function ${functionName} parameter ${i + 1} expects type ${expectedType}, but got ${actualType}`, node);
+                    const displayType = typeof evalArg === 'function' ? 'function' : actualType;
+                    throw this.createRuntimeError(`Function ${functionName} parameter ${i + 1} expects type ${expectedType}, but got ${displayType}`, node);
                 }
             }
         }
@@ -1299,7 +1304,9 @@ class Interpreter {
 
                     // First check if argument has a declared type (e.g., variable with type annotation)
                     const declaredType = getArgumentDeclaredType(argNode, scope);
-                    const actualType = declaredType || this.getValueType(args[i]);
+                    // If declaredType is an object with params (function signature), convert to 'function'
+                    const normalizedDeclaredType = declaredType && typeof declaredType === 'object' && declaredType.params ? 'function' : declaredType;
+                    const actualType = normalizedDeclaredType || this.getValueType(args[i]);
 
                     // Auto-convert string to cstring
                     if (expectedType === 'cstring' && actualType === 'string') {
@@ -1316,7 +1323,8 @@ class Interpreter {
                         args[i] = this._colorBuffer;
                     }
                     else if (!this.isTypeCompatible(actualType, expectedType)) {
-                        throw this.createRuntimeError(`Function ${functionName} parameter ${i + 1} expects type ${expectedType}, but got ${actualType}`);
+                        const displayType = typeof args[i] === 'function' ? 'function' : actualType;
+                        throw this.createRuntimeError(`Function ${functionName} parameter ${i + 1} expects type ${expectedType}, but got ${displayType}`, argNode);
                     }
                 }
             }
@@ -1325,6 +1333,19 @@ class Interpreter {
         // Call function
         if (typeof func !== 'function') {
             throw new Error(`Cannot call non-function: ${typeof func}`);
+        }
+
+        // Special handling for lv_obj_add_event_cb
+        if (functionName === 'lv_obj_add_event_cb') {
+            // args: [obj, callback_function, event_code, user_data]
+            // Register the callback with the event manager
+            if (this.eventManager && typeof args[1] === 'function') {
+                // EventManager handles the entire registration internally
+                // It will call wasm._lv_obj_add_event_cb with the global dispatcher
+                this.eventManager.register(args[0], args[2], args[1], scope);
+                // Don't call the function again - return early
+                return 0;
+            }
         }
 
         // Special handling for lv_color_hex which uses sret calling convention
@@ -1896,7 +1917,12 @@ function emitC(ast, allowedFunctions) {
             case 'FunctionDeclaration':
                 const returnType = mapTypeToCType(node.returnType);
                 const params = node.params.map(p => {
-                    const paramType = mapTypeToCType(p.type);
+                    let paramType = mapTypeToCType(p.type);
+                    // Event callbacks receive lv_event_t* instead of int32_t
+                    if (p.type === 'number' && node.params.length === 1) {
+                        // Single number parameter likely means event callback
+                        paramType = 'lv_event_t*';
+                    }
                     return `${paramType} ${p.name}`;
                 }).join(', ');
                 const fnContext = { ...context, currentFunction: node.name };
@@ -1912,7 +1938,74 @@ function emitC(ast, allowedFunctions) {
                 return `${indentStr}${varType} ${node.name}${varInit};`;
 
             case 'ExpressionStatement':
-                return `${indentStr}${emit(node.expression, 0, context)};`;
+                // Check if this is a call with string concatenation that needs preprocessing
+                let preamble = '';
+                
+                if (node.expression.type === 'CallExpression') {
+                    const callNode = node.expression;
+                    
+                    // Check each argument for string concatenation
+                    callNode.arguments.forEach((arg, index) => {
+                        if (arg.type === 'BinaryExpression' && arg.operator === '+') {
+                            const parts = [];
+                            
+                            function collectParts(n) {
+                                if (n.type === 'BinaryExpression' && n.operator === '+') {
+                                    collectParts(n.left);
+                                    collectParts(n.right);
+                                } else {
+                                    parts.push(n);
+                                }
+                            }
+                            
+                            collectParts(arg);
+                            
+                            const hasStringLiteral = parts.some(p => 
+                                p.type === 'Literal' && typeof p.value === 'string'
+                            );
+                            
+                            if (hasStringLiteral && parts.length > 1) {
+                                // Generate format string and args
+                                let formatStr = '';
+                                const sprintfArgs = [];
+                                
+                                parts.forEach(part => {
+                                    if (part.type === 'Literal' && typeof part.value === 'string') {
+                                        formatStr += part.value;
+                                    } else {
+                                        const partType = part.type === 'Identifier' 
+                                            ? getIdentifierType(part.name, context) 
+                                            : 'number';
+                                        
+                                        if (partType === 'number' || !partType) {
+                                            formatStr += '%d';
+                                        } else if (partType === 'string' || partType === 'cstring') {
+                                            formatStr += '%s';
+                                        } else {
+                                            formatStr += '%d';
+                                        }
+                                        
+                                        sprintfArgs.push(emit(part, 0, context));
+                                    }
+                                });
+                                
+                                const bufferName = `_str_buf`;
+                                const argsStr = sprintfArgs.length > 0 ? ', ' + sprintfArgs.join(', ') : '';
+                                
+                                // Store buffer info in context for CallExpression to use
+                                if (!context.stringBuffers) {
+                                    context.stringBuffers = new Map();
+                                }
+                                context.stringBuffers.set(arg, bufferName);
+                                
+                                preamble += `${indentStr}static char ${bufferName}[256];\n`;
+                                preamble += `${indentStr}snprintf(${bufferName}, sizeof(${bufferName}), "${formatStr}"${argsStr});\n`;
+                            }
+                        }
+                    });
+                }
+                
+                return preamble + `${indentStr}${emit(node.expression, 0, context)};`;
 
             case 'BlockStatement':
                 const statements = node.body.map(stmt => emit(stmt, indent + 1, context)).join('\n');
@@ -1943,10 +2036,18 @@ function emitC(ast, allowedFunctions) {
                 return `${indentStr}return${retArg};`;
 
             case 'BinaryExpression':
+                // Check if this node has already been processed into a string buffer
+                if (context.stringBuffers && context.stringBuffers.has(node)) {
+                    return context.stringBuffers.get(node);
+                }
+                
                 // Handle logical operators - map to C equivalents
                 let op = node.operator;
                 if (op === '&&') op = '&&';
                 if (op === '||') op = '||';
+                
+                // For + operator with string concatenation, it should have been
+                // handled in ExpressionStatement. If we reach here, emit as-is
                 return `${emit(node.left, 0, context)} ${op} ${emit(node.right, 0, context)}`;
 
             case 'LogicalExpression':
@@ -1976,8 +2077,13 @@ function emitC(ast, allowedFunctions) {
                 // Get function type information if available
                 const funcTypeInfo = calleeName ? functionTypeMap[calleeName] : null;
 
-                // Emit arguments with lv_color conversion if needed
+                // Emit arguments with special handling
                 const emittedArgs = node.arguments.map((arg, index) => {
+                    // Check if this argument has a pre-generated buffer in context
+                    if (context.stringBuffers && context.stringBuffers.has(arg)) {
+                        return context.stringBuffers.get(arg);
+                    }
+                    
                     let argCode = emit(arg, 0, context);
 
                     // Check if this parameter expects lv_color

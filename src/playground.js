@@ -13,6 +13,9 @@ let wheelPressed = 0;
 let wheelDeltaY = 0;
 
 function onWasmLoaded() {
+    // Set global lvgl reference to wasm module
+    lvgl = wasm;
+    
     wasm._init(
         0, // uint32_t wasmModuleId
         0, // uint32_t debuggerMessageSubsciptionFilter
@@ -126,11 +129,81 @@ const LVGL_CONSTANTS = {
     LV_PALETTE_BLUE: 0,
     LV_PALETTE_RED: 1,
     LV_PALETTE_GREEN: 2,
-    LV_PALETTE_ORANGE: 3
+    LV_PALETTE_ORANGE: 3,
+    // Event codes
+    LV_EVENT_ALL: 0,
+    LV_EVENT_PRESSED: 1,
+    LV_EVENT_PRESSING: 2,
+    LV_EVENT_PRESS_LOST: 3,
+    LV_EVENT_SHORT_CLICKED: 4,
+    LV_EVENT_LONG_PRESSED: 5,
+    LV_EVENT_LONG_PRESSED_REPEAT: 6,
+    LV_EVENT_CLICKED: 7,
+    LV_EVENT_RELEASED: 8,
+    LV_EVENT_VALUE_CHANGED: 28,
+    LV_EVENT_READY: 30,
+    LV_EVENT_CANCEL: 31
 }
 
 // Global LVGL instance reference
 let lvgl = null;
+
+// ============================================================================
+// Event Manager - Bridges EEZ Script callbacks to LVGL C events
+// ============================================================================
+
+class EventManager {
+    constructor(wasmModule) {
+        this.wasm = wasmModule;
+        this.handlers = new Map(); // id -> {callback, obj, eventCode}
+        this.nextId = 0;
+    }
+
+    register(obj, eventCode, callback, scope) {
+        const id = this.nextId++;
+        this.handlers.set(id, { callback, obj, eventCode });
+
+        // Get the function pointer as an integer (not the JS wrapper)
+        const dispatcherPtr = this.wasm._get_global_dispatcher_ptr();
+        
+        // Call lv_obj_add_event_cb with the global dispatcher pointer
+        this.wasm._lv_obj_add_event_cb(obj, dispatcherPtr, eventCode, id);
+        
+        return id;
+    }
+
+    unregister(id) {
+        this.handlers.delete(id);
+        // Note: We don't remove the LVGL event callback here
+        // The callback will just be a no-op if the handler is not in the map
+    }
+
+    clear() {
+        this.handlers.clear();
+    }
+    
+    dispatch(handlerId, eventPtr) {
+        const handler = this.handlers.get(handlerId);
+        if (handler) {
+            try {
+                // Call the EEZ Script callback with the event pointer as a number
+                // The callback can use lv_event_get_target, lv_event_get_code, etc.
+                handler.callback(eventPtr);
+            } catch (error) {
+                console.error('Event handler error:', error);
+            }
+        }
+    }
+}
+
+let eventManager = null;
+
+// Global dispatcher function called from WASM
+window.js_dispatch_event = function(handlerId, eventPtr) {
+    if (eventManager) {
+        eventManager.dispatch(handlerId, eventPtr);
+    }
+};
 
 function mainLoop() {
     //
@@ -222,8 +295,40 @@ function init(): lv_obj {
     return screen;
 }`
     },
+    'events': {
+        name: '3. Button with Click Event',
+        code: `// Button with event handler
+let counter: number = 0;
+let labelObj: lv_obj = 0;
+
+function on_button_clicked(event: number) {
+    counter = counter + 1;
+    lv_label_set_text(labelObj, "Clicked " + counter + " times");
+}
+
+function init(): lv_obj {
+    let screen: lv_obj = lv_obj_create(0);
+    lv_screen_load_anim(screen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
+    
+    // Create button
+    let button: lv_obj = lv_button_create(screen);
+    lv_obj_set_size(button, 250, 80);
+    lv_obj_set_style_align(button, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    
+    // Create label inside button
+    let label: lv_obj = lv_label_create(button);
+    lv_obj_set_style_align(label, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_label_set_text(label, "Click me!");
+    labelObj = label;
+    
+    // Add event handler
+    lv_obj_add_event_cb(button, on_button_clicked, LV_EVENT_CLICKED, 0);
+    
+    return screen;
+}`
+    },
     'leds': {
-        name: '3. LED Indicators',
+        name: '4. LED Indicators',
         code: `// Colorful LED indicators
 function init(): lv_obj {
     let screen: lv_obj = lv_obj_create(0);
@@ -271,7 +376,7 @@ function init(): lv_obj {
 }`
     },
     'slider': {
-        name: '4. Slider & Bar',
+        name: '5. Slider & Bar',
         code: `// Slider and progress bar
 function init(): lv_obj {
     let screen: lv_obj = lv_obj_create(0);
@@ -300,7 +405,7 @@ function init(): lv_obj {
 }`
     },
     'arc': {
-        name: '5. Arc Gauge',
+        name: '6. Arc Gauge',
         code: `// Arc gauge / circular progress
 function init(): lv_obj {
     let screen: lv_obj = lv_obj_create(0);
@@ -333,7 +438,7 @@ function init(): lv_obj {
 }`
     },
     'checkboxes': {
-        name: '6. Checkbox Group',
+        name: '7. Checkbox Group',
         code: `// Checkbox group
 function init(): lv_obj {
     let screen: lv_obj = lv_obj_create(0);
@@ -365,7 +470,7 @@ function init(): lv_obj {
 }`
     },
     'switches': {
-        name: '7. Switch Panel',
+        name: '8. Switch Panel',
         code: `// Switch controls
 function init(): lv_obj {
     let screen: lv_obj = lv_obj_create(0);
@@ -404,7 +509,7 @@ function init(): lv_obj {
 }`
     },
     'spinner': {
-        name: '8. Spinner & Loading',
+        name: '9. Spinner & Loading',
         code: `// Loading spinner
 function init(): lv_obj {
     let screen: lv_obj = lv_obj_create(0);
@@ -430,7 +535,7 @@ function init(): lv_obj {
 }`
     },
     'roller': {
-        name: '9. Roller Selector',
+        name: '10. Roller Selector',
         code: `// Roller selector widget
 function init(): lv_obj {
     let screen: lv_obj = lv_obj_create(0);
@@ -451,7 +556,7 @@ function init(): lv_obj {
 }`
     },
     'dashboard': {
-        name: '10. Full Dashboard',
+        name: '11. Full Dashboard',
         code: `// Create a title label with custom styling
 function create_title(parent: lv_obj, text: string, x: number, y: number): lv_obj {
     let label: lv_obj = lv_label_create(parent);
@@ -598,6 +703,135 @@ function init(): lv_obj {
 
     return screen;
 }`
+    },
+    'navigation': {
+        name: '12. Multi-Screen Navigation',
+        code: `// Multi-screen app with navigation
+// Global screens
+let homeScreen: lv_obj = 0;
+let settingsScreen: lv_obj = 0;
+let aboutScreen: lv_obj = 0;
+
+// Navigation handlers
+function go_to_settings(event: number) {
+    lv_screen_load_anim(settingsScreen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
+}
+
+function go_to_about(event: number) {
+    lv_screen_load_anim(aboutScreen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
+}
+
+function go_to_home(event: number) {
+    lv_screen_load_anim(homeScreen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
+}
+
+// Create navigation button helper
+function create_nav_button(parent: lv_obj, text: string, x: number, y: number, handler) {
+    let btn: lv_obj = lv_button_create(parent);
+    lv_obj_set_pos(btn, x, y);
+    lv_obj_set_size(btn, 200, 50);
+    
+    let label: lv_obj = lv_label_create(btn);
+    lv_obj_set_style_align(label, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_label_set_text(label, text);
+    
+    lv_obj_add_event_cb(btn, handler, LV_EVENT_CLICKED, 0);
+    
+    return btn;
+}
+
+// Create Home Screen
+function create_home_screen(): lv_obj {
+    let screen: lv_obj = lv_obj_create(0);
+    
+    // Title
+    let title: lv_obj = lv_label_create(screen);
+    lv_obj_set_pos(title, 300, 80);
+    lv_label_set_text(title, "Home Screen");
+    
+    // Description
+    let desc: lv_obj = lv_label_create(screen);
+    lv_obj_set_pos(desc, 200, 150);
+    lv_label_set_text(desc, "Welcome! Navigate between screens using buttons.");
+    
+    // Navigation buttons
+    create_nav_button(screen, "Go to Settings", 300, 250, go_to_settings);
+    create_nav_button(screen, "Go to About", 300, 320, go_to_about);
+    
+    return screen;
+}
+
+// Create Settings Screen
+function create_settings_screen(): lv_obj {
+    let screen: lv_obj = lv_obj_create(0);
+    
+    // Title
+    let title: lv_obj = lv_label_create(screen);
+    lv_obj_set_pos(title, 280, 80);
+    lv_label_set_text(title, "Settings Screen");
+    
+    // Some settings controls
+    let label1: lv_obj = lv_label_create(screen);
+    lv_obj_set_pos(label1, 200, 150);
+    lv_label_set_text(label1, "Enable Notifications");
+    
+    let sw1: lv_obj = lv_switch_create(screen);
+    lv_obj_set_pos(sw1, 500, 145);
+    
+    let label2: lv_obj = lv_label_create(screen);
+    lv_obj_set_pos(label2, 200, 200);
+    lv_label_set_text(label2, "Dark Mode");
+    
+    let sw2: lv_obj = lv_switch_create(screen);
+    lv_obj_set_pos(sw2, 500, 195);
+    
+    // Back button
+    create_nav_button(screen, "Back to Home", 300, 300, go_to_home);
+    
+    return screen;
+}
+
+// Create About Screen
+function create_about_screen(): lv_obj {
+    let screen: lv_obj = lv_obj_create(0);
+    
+    // Title
+    let title: lv_obj = lv_label_create(screen);
+    lv_obj_set_pos(title, 300, 80);
+    lv_label_set_text(title, "About Screen");
+    
+    // Info
+    let info: lv_obj = lv_label_create(screen);
+    lv_obj_set_pos(info, 200, 150);
+    lv_label_set_text(info, "LVGL Playground Demo");
+    
+    let version: lv_obj = lv_label_create(screen);
+    lv_obj_set_pos(version, 200, 180);
+    lv_label_set_text(version, "Version: 1.0.0");
+    
+    let desc: lv_obj = lv_label_create(screen);
+    lv_obj_set_pos(desc, 200, 220);
+    lv_label_set_text(desc, "Multi-screen navigation example with events.");
+    
+    // Navigation buttons
+    create_nav_button(screen, "Back to Home", 250, 300, go_to_home);
+    create_nav_button(screen, "Go to Settings", 250, 370, go_to_settings);
+    
+    return screen;
+}
+
+// Main initialization
+function init(): lv_obj {
+    // Create all screens
+    homeScreen = create_home_screen();
+    settingsScreen = create_settings_screen();
+    aboutScreen = create_about_screen();
+    
+    // Load home screen initially
+    lv_screen_load_anim(homeScreen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
+    
+    return homeScreen;
+}`
     }
 };
 
@@ -697,6 +931,13 @@ function runScript() {
     }
 
     try {
+        // Clear previous event handlers
+        if (eventManager) {
+            eventManager.clear();
+        } else {
+            eventManager = new EventManager(wasm);
+        }
+
         // Compile the script
         currentScript = eez_script_compile(scriptCode);
 
@@ -713,6 +954,9 @@ function runScript() {
 
         currentScript.init(globals, lvgl, LVGL_CONSTANTS, allowedFunctions);
 
+        // Set event manager on the interpreter
+        currentScript._interpreter.eventManager = eventManager;
+
         // Generate and display JS code
         const jsCode = currentScript.emitJS();
         document.getElementById('jsOutput').textContent = jsCode;
@@ -722,8 +966,9 @@ function runScript() {
         document.getElementById('cOutput').textContent = cCode;
 
         // Find and execute the init function (try common names)
-        const initFunctions = ['init', 'main', 'init_dashboard', 'init_simple', 'init_button', 'init_slider', 'init_leds'];
+        const initFunctions = ['init'];
         let executed = false;
+        let lastError = null;
 
         for (const funcName of initFunctions) {
             try {
@@ -732,17 +977,27 @@ function runScript() {
                 showStatus('✓ Script executed successfully!');
                 break;
             } catch (e) {
+                lastError = e;
                 // Try next function name
             }
         }
 
         if (!executed) {
-            showError('No entry function found. Please define one of: ' + initFunctions.join(', '));
+            if (lastError) {
+                // Show the actual error from execution
+                throw lastError;
+            } else {
+                showError('No entry function found. Please define one of: ' + initFunctions.join(', '));
+            }
         }
 
     } catch (error) {
-        showError('Error: ' + error.message);
-        console.error(error);
+        const errorMsg = error.message || String(error);
+        showError('Error: ' + errorMsg);
+        console.error('Full error:', error);
+        if (error.stack) {
+            console.error('Stack trace:', error.stack);
+        }
     }
 }
 window.runScript = runScript;

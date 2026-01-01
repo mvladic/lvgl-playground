@@ -142,12 +142,16 @@
 
         .tab-content {
             flex: 1;
-            overflow: auto;
+            overflow-y: auto;
             display: none;
         }
 
         .tab-content.active {
             display: block;
+        }
+
+        #canvasTab {
+            position: relative;
         }
 
         .canvas-container {
@@ -173,24 +177,34 @@
         }
 
         .error {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            right: 1rem;
+            z-index: 10;
             background: #fee;
             color: #c00;
             padding: 1rem;
-            margin: 1rem;
             border-radius: 4px;
             border-left: 4px solid #c00;
             font-family: monospace;
             font-size: 13px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
         .status {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            right: 1rem;
+            z-index: 10;
             padding: 0.5rem 1rem;
             background: #e8f5e9;
             color: #2e7d32;
             border-left: 4px solid #4caf50;
-            margin: 1rem;
             border-radius: 4px;
             font-size: 0.875rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
     </style>
 </head>
@@ -258,7 +272,6 @@
     <script>
         const wasm = lvglConstructor(onWasmLoaded);
         __dirname = undefined;
-        lvgl = wasm; // Assign to global variable
     </script>
 
 </body>

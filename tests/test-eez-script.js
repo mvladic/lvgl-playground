@@ -1282,6 +1282,75 @@ test('emitJS: logical expressions', () => {
 });
 
 // ============================================================================
+// C CODE GENERATION TESTS
+// ============================================================================
+
+test('C gen: event callback signature', () => {
+    const code = `
+        function on_button_clicked(event: number) {
+            let x: number = 0;
+        }
+    `;
+    const script = eez_script_compile(code);
+    const cCode = script.emitC();
+    assert(cCode.includes('lv_event_t* event'), 'Event callback should use lv_event_t* signature');
+});
+
+test('C gen: string concatenation with snprintf', () => {
+    const code = `
+        let counter: number = 0;
+        let labelObj: lv_obj = 0;
+        
+        function update() {
+            lv_label_set_text(labelObj, "Count: " + counter);
+        }
+    `;
+    const script = eez_script_compile(code);
+    const cCode = script.emitC();
+    assert(cCode.includes('snprintf'), 'String concatenation should generate snprintf');
+    assert(cCode.includes('_str_buf'), 'Should use string buffer');
+    assert(cCode.includes('sizeof(_str_buf)'), 'Should use sizeof for buffer size');
+    assert(!cCode.includes('"Count: " + counter'), 'Should not contain raw concatenation');
+});
+
+test('C gen: string concatenation format string', () => {
+    const code = `
+        let counter: number = 0;
+        let labelObj: lv_obj = 0;
+        
+        function update() {
+            lv_label_set_text(labelObj, "Clicked " + counter + " times");
+        }
+    `;
+    const script = eez_script_compile(code);
+    const cCode = script.emitC();
+    assert(cCode.includes('"Clicked %d times"'), 'Should generate correct format string');
+    assert(cCode.includes('counter);'), 'Should pass counter as argument to snprintf');
+});
+
+test('C gen: complete event handler example', () => {
+    const code = `
+        let counter: number = 0;
+        let labelObj: lv_obj = 0;
+        
+        function on_button_clicked(event: number) {
+            counter = counter + 1;
+            lv_label_set_text(labelObj, "Clicked " + counter + " times");
+        }
+    `;
+    const script = eez_script_compile(code);
+    const cCode = script.emitC();
+    
+    // Check event signature
+    assert(cCode.includes('void on_button_clicked(lv_event_t* event)'), 'Should have correct event callback signature');
+    
+    // Check string concatenation handling
+    assert(cCode.includes('static char _str_buf[256]'), 'Should declare string buffer');
+    assert(cCode.includes('snprintf(_str_buf, sizeof(_str_buf), "Clicked %d times", counter)'), 'Should generate snprintf call');
+    assert(cCode.includes('lv_label_set_text(labelObj, _str_buf)'), 'Should pass buffer to function');
+});
+
+// ============================================================================
 // SUMMARY
 // ============================================================================
 

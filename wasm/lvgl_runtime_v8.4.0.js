@@ -5310,13 +5310,14 @@ var ASM_CONSTS = {
  1046510: ($0, $1, $2) => { lvglObjAddStyle($0, $1, $2); },  
  1046543: ($0, $1, $2) => { lvglObjRemoveStyle($0, $1, $2); },  
  1046579: ($0, $1) => { lvglSetColorTheme($0, UTF8ToString($1)); },  
- 1046624: ($0, $1, $2, $3, $4, $5) => { return eez_mqtt_init($0, UTF8ToString($1), UTF8ToString($2), $3, UTF8ToString($4), UTF8ToString($5)); },  
- 1046730: ($0, $1) => { return eez_mqtt_deinit($0, $1); },  
- 1046766: ($0, $1) => { return eez_mqtt_connect($0, $1); },  
- 1046803: ($0, $1) => { return eez_mqtt_disconnect($0, $1); },  
- 1046843: ($0, $1, $2) => { return eez_mqtt_subscribe($0, $1, UTF8ToString($2)); },  
- 1046900: ($0, $1, $2) => { return eez_mqtt_unsubscribe($0, $1, UTF8ToString($2)); },  
- 1046959: ($0, $1, $2, $3) => { return eez_mqtt_publish($0, $1, UTF8ToString($2), UTF8ToString($3)); }
+ 1046624: ($0, $1) => { js_dispatch_event($0, $1); },  
+ 1046655: ($0, $1, $2, $3, $4, $5) => { return eez_mqtt_init($0, UTF8ToString($1), UTF8ToString($2), $3, UTF8ToString($4), UTF8ToString($5)); },  
+ 1046761: ($0, $1) => { return eez_mqtt_deinit($0, $1); },  
+ 1046797: ($0, $1) => { return eez_mqtt_connect($0, $1); },  
+ 1046834: ($0, $1) => { return eez_mqtt_disconnect($0, $1); },  
+ 1046874: ($0, $1, $2) => { return eez_mqtt_subscribe($0, $1, UTF8ToString($2)); },  
+ 1046931: ($0, $1, $2) => { return eez_mqtt_unsubscribe($0, $1, UTF8ToString($2)); },  
+ 1046990: ($0, $1, $2, $3) => { return eez_mqtt_publish($0, $1, UTF8ToString($2), UTF8ToString($3)); }
 };
 
 // Imports from the Wasm binary.
@@ -5596,6 +5597,8 @@ var _v8_lv_slider_set_value = Module['_v8_lv_slider_set_value'] = makeInvalidEar
 var _v8_lv_slider_get_value = Module['_v8_lv_slider_get_value'] = makeInvalidEarlyAccess('_v8_lv_slider_get_value');
 var _v8_lv_slider_set_left_value = Module['_v8_lv_slider_set_left_value'] = makeInvalidEarlyAccess('_v8_lv_slider_set_left_value');
 var _v8_lv_slider_get_left_value = Module['_v8_lv_slider_get_left_value'] = makeInvalidEarlyAccess('_v8_lv_slider_get_left_value');
+var _global_event_dispatcher = Module['_global_event_dispatcher'] = makeInvalidEarlyAccess('_global_event_dispatcher');
+var _get_global_dispatcher_ptr = Module['_get_global_dispatcher_ptr'] = makeInvalidEarlyAccess('_get_global_dispatcher_ptr');
 var _lv_disp_get_scr_prev = Module['_lv_disp_get_scr_prev'] = makeInvalidEarlyAccess('_lv_disp_get_scr_prev');
 var _lv_obj_get_disp = Module['_lv_obj_get_disp'] = makeInvalidEarlyAccess('_lv_obj_get_disp');
 var _lv_anim_del = Module['_lv_anim_del'] = makeInvalidEarlyAccess('_lv_anim_del');
@@ -6869,6 +6872,8 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports['v8_lv_slider_get_value'] != 'undefined', 'missing Wasm export: v8_lv_slider_get_value');
   assert(typeof wasmExports['v8_lv_slider_set_left_value'] != 'undefined', 'missing Wasm export: v8_lv_slider_set_left_value');
   assert(typeof wasmExports['v8_lv_slider_get_left_value'] != 'undefined', 'missing Wasm export: v8_lv_slider_get_left_value');
+  assert(typeof wasmExports['global_event_dispatcher'] != 'undefined', 'missing Wasm export: global_event_dispatcher');
+  assert(typeof wasmExports['get_global_dispatcher_ptr'] != 'undefined', 'missing Wasm export: get_global_dispatcher_ptr');
   assert(typeof wasmExports['lv_disp_get_scr_prev'] != 'undefined', 'missing Wasm export: lv_disp_get_scr_prev');
   assert(typeof wasmExports['lv_obj_get_disp'] != 'undefined', 'missing Wasm export: lv_obj_get_disp');
   assert(typeof wasmExports['lv_anim_del'] != 'undefined', 'missing Wasm export: lv_anim_del');
@@ -8139,6 +8144,8 @@ function assignWasmExports(wasmExports) {
   _v8_lv_slider_get_value = Module['_v8_lv_slider_get_value'] = createExportWrapper('v8_lv_slider_get_value', 1);
   _v8_lv_slider_set_left_value = Module['_v8_lv_slider_set_left_value'] = createExportWrapper('v8_lv_slider_set_left_value', 3);
   _v8_lv_slider_get_left_value = Module['_v8_lv_slider_get_left_value'] = createExportWrapper('v8_lv_slider_get_left_value', 1);
+  _global_event_dispatcher = Module['_global_event_dispatcher'] = createExportWrapper('global_event_dispatcher', 1);
+  _get_global_dispatcher_ptr = Module['_get_global_dispatcher_ptr'] = createExportWrapper('get_global_dispatcher_ptr', 0);
   _lv_disp_get_scr_prev = Module['_lv_disp_get_scr_prev'] = createExportWrapper('lv_disp_get_scr_prev', 1);
   _lv_obj_get_disp = Module['_lv_obj_get_disp'] = createExportWrapper('lv_obj_get_disp', 1);
   _lv_anim_del = Module['_lv_anim_del'] = createExportWrapper('lv_anim_del', 2);
