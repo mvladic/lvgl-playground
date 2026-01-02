@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "npx live-server .",
     "start": "npm run dev",
+    "test": "node tests/test-eez-script.js",
     "update-wasm": "cp -r ../studio-wasm-libs/release/wasm/* wasm/"
   },
   "keywords": ["lvgl", "eez-script", "playground", "wasm"],

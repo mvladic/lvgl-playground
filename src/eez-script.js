@@ -1531,7 +1531,7 @@ function eez_script_compile(script) {
 }
 
 // Shared type inference - collects type information from AST
-function collectTypeInformation(ast) {
+function collectTypeInformation(ast, allowedFunctions) {
     const varTypes = {};
     const funcParamTypes = {};
     const functionTypeMap = {};
@@ -1627,7 +1627,7 @@ function collectTypeInformation(ast) {
 // JavaScript code emitter - converts AST to JavaScript code
 function emitJS(ast, allowedFunctions) {
     // Collect type information (explicit and inferred)
-    const { varTypes, funcParamTypes, functionTypeMap } = collectTypeInformation(ast);
+    const { varTypes, funcParamTypes, functionTypeMap } = collectTypeInformation(ast, allowedFunctions);
 
     function getIdentifierType(name, context) {
         // Check if it's a parameter of the current function
@@ -1860,7 +1860,7 @@ function emitJS(ast, allowedFunctions) {
 // C code emitter - converts AST to C code
 function emitC(ast, allowedFunctions) {
     // Collect type information (explicit and inferred)
-    const { varTypes, funcParamTypes, functionTypeMap } = collectTypeInformation(ast);
+    const { varTypes, funcParamTypes, functionTypeMap } = collectTypeInformation(ast, allowedFunctions);
 
     function getIdentifierType(name, context) {
         // Check if it's a parameter of the current function
