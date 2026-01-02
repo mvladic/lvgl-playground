@@ -1534,7 +1534,6 @@ function eez_script_compile(script) {
 function collectTypeInformation(ast, allowedFunctions) {
     const varTypes = {};
     const funcParamTypes = {};
-    const functionTypeMap = {};
 
     // Helper to infer type from an expression during type collection
     function inferTypeFromInit(expr) {
@@ -1544,9 +1543,9 @@ function collectTypeInformation(ast, allowedFunctions) {
         if (expr.type === 'CallExpression' && expr.callee.type === 'Identifier') {
             const functionName = expr.callee.name;
 
-            // Check in functionTypeMap for return type
-            if (functionTypeMap[functionName]) {
-                return functionTypeMap[functionName].returnType;
+            // Check in allowedFunctions for return type
+            if (allowedFunctions && allowedFunctions[functionName]) {
+                return allowedFunctions[functionName].returnType;
             }
         }
 
@@ -1606,28 +1605,15 @@ function collectTypeInformation(ast, allowedFunctions) {
         }
     }
 
-    // Build function type map from allowedFunctions
-    if (allowedFunctions && typeof allowedFunctions === 'object') {
-        for (const funcName in allowedFunctions) {
-            const funcSpec = allowedFunctions[funcName];
-            if (funcSpec && funcSpec.params && funcSpec.returnType) {
-                functionTypeMap[funcName] = {
-                    params: funcSpec.params,
-                    returnType: funcSpec.returnType
-                };
-            }
-        }
-    }
-
     collectTypes(ast);
 
-    return { varTypes, funcParamTypes, functionTypeMap };
+    return { varTypes, funcParamTypes };
 }
 
 // JavaScript code emitter - converts AST to JavaScript code
 function emitJS(ast, allowedFunctions) {
     // Collect type information (explicit and inferred)
-    const { varTypes, funcParamTypes, functionTypeMap } = collectTypeInformation(ast, allowedFunctions);
+    const { varTypes, funcParamTypes } = collectTypeInformation(ast, allowedFunctions);
 
     function getIdentifierType(name, context) {
         // Check if it's a parameter of the current function
@@ -1750,7 +1736,7 @@ function emitJS(ast, allowedFunctions) {
                 }
 
                 // Get function type information if available
-                const funcTypeInfo = calleeName ? functionTypeMap[calleeName] : null;
+                const funcTypeInfo = calleeName && allowedFunctions ? allowedFunctions[calleeName] : null;
 
                 // Check if this function expects cstring parameters (heuristic: contains set_text, set_label, etc.)
                 const expectsCString = calleeName && (
@@ -1860,7 +1846,7 @@ function emitJS(ast, allowedFunctions) {
 // C code emitter - converts AST to C code
 function emitC(ast, allowedFunctions) {
     // Collect type information (explicit and inferred)
-    const { varTypes, funcParamTypes, functionTypeMap } = collectTypeInformation(ast, allowedFunctions);
+    const { varTypes, funcParamTypes } = collectTypeInformation(ast, allowedFunctions);
 
     function getIdentifierType(name, context) {
         // Check if it's a parameter of the current function
@@ -2071,7 +2057,7 @@ function emitC(ast, allowedFunctions) {
                 }
 
                 // Get function type information if available
-                const funcTypeInfo = calleeName ? functionTypeMap[calleeName] : null;
+                const funcTypeInfo = calleeName && allowedFunctions ? allowedFunctions[calleeName] : null;
 
                 // Emit arguments with special handling
                 const emittedArgs = node.arguments.map((arg, index) => {
