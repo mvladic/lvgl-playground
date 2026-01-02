@@ -1530,41 +1530,65 @@ function eez_script_compile(script) {
     };
 }
 
-// Shared type inference - collects type information from AST
+// Shared type inference - collects type information from AST and decorates nodes
 function collectTypeInformation(ast, allowedFunctions) {
     const varTypes = {};
-    const funcParamTypes = {};
 
-    // Helper to infer type from an expression during type collection
-    function inferTypeFromInit(expr) {
-        if (!expr) return null;
+    // Helper to resolve type of an expression and decorate it
+    function resolveExpressionType(node, currentFunc = null) {
+        if (!node) return null;
 
-        // If it's a call expression, try to get the return type
-        if (expr.type === 'CallExpression' && expr.callee.type === 'Identifier') {
-            const functionName = expr.callee.name;
+        if (node.type === 'Literal') {
+            if (typeof node.value === 'number') node.resolvedType = 'number';
+            else if (typeof node.value === 'boolean') node.resolvedType = 'bool';
+            else if (typeof node.value === 'string') node.resolvedType = 'string';
+            return node.resolvedType;
+        }
 
-            // Check in allowedFunctions for return type
+        if (node.type === 'Identifier') {
+            const localKey = currentFunc ? `${currentFunc}.${node.name}` : node.name;
+            node.resolvedType = varTypes[localKey] || varTypes[node.name] || null;
+            return node.resolvedType;
+        }
+
+        if (node.type === 'CallExpression' && node.callee.type === 'Identifier') {
+            const functionName = node.callee.name;
             if (allowedFunctions && allowedFunctions[functionName]) {
-                return allowedFunctions[functionName].returnType;
+                node.resolvedType = allowedFunctions[functionName].returnType;
             }
+            // Resolve types for arguments too
+            node.arguments.forEach(arg => resolveExpressionType(arg, currentFunc));
+            return node.resolvedType;
         }
 
-        // If it's a literal, infer from the literal type
-        if (expr.type === 'Literal') {
-            if (typeof expr.value === 'number') return 'number';
-            if (typeof expr.value === 'boolean') return 'bool';
-            if (typeof expr.value === 'string') return 'string';
+        if (node.type === 'BinaryExpression') {
+            resolveExpressionType(node.left, currentFunc);
+            resolveExpressionType(node.right, currentFunc);
+            if (['==', '!=', '<', '>', '<=', '>=', '&&', '||'].includes(node.operator)) {
+                node.resolvedType = 'bool';
+            } else {
+                node.resolvedType = node.left.resolvedType;
+            }
+            return node.resolvedType;
         }
 
-        // If it's an identifier, look up its type
-        if (expr.type === 'Identifier') {
-            return varTypes[expr.name] || null;
+        if (node.type === 'UnaryExpression') {
+            resolveExpressionType(node.argument, currentFunc);
+            node.resolvedType = node.argument.resolvedType;
+            return node.resolvedType;
+        }
+
+        if (node.type === 'AssignmentExpression') {
+            resolveExpressionType(node.left, currentFunc);
+            resolveExpressionType(node.right, currentFunc);
+            node.resolvedType = node.left.resolvedType;
+            return node.resolvedType;
         }
 
         return null;
     }
 
-    // Traverse AST to collect type information
+    // Traverse AST to collect type information and decorate nodes
     function collectTypes(node, currentFunc = null) {
         if (!node) return;
 
@@ -1572,10 +1596,9 @@ function collectTypeInformation(ast, allowedFunctions) {
             node.body.forEach(stmt => collectTypes(stmt));
         } else if (node.type === 'FunctionDeclaration') {
             if (node.params) {
-                funcParamTypes[node.name] = {};
                 node.params.forEach(p => {
                     if (p.type) {
-                        funcParamTypes[node.name][p.name] = p.type;
+                        varTypes[`${node.name}.${p.name}`] = p.type;
                     }
                 });
             }
@@ -1587,50 +1610,43 @@ function collectTypeInformation(ast, allowedFunctions) {
             if (node.varType) {
                 varTypes[key] = node.varType;
             } else if (node.init) {
-                const inferredType = inferTypeFromInit(node.init);
+                const inferredType = resolveExpressionType(node.init, currentFunc);
                 if (inferredType) {
                     varTypes[key] = inferredType;
                 }
             }
+            node.resolvedType = varTypes[key];
         } else if (node.type === 'BlockStatement') {
             node.body.forEach(stmt => collectTypes(stmt, currentFunc));
+        } else if (node.type === 'ExpressionStatement') {
+            resolveExpressionType(node.expression, currentFunc);
         } else if (node.type === 'IfStatement') {
+            resolveExpressionType(node.test, currentFunc);
             collectTypes(node.consequent, currentFunc);
             collectTypes(node.alternate, currentFunc);
         } else if (node.type === 'ForStatement') {
-            collectTypes(node.init, currentFunc);
+            if (node.init) {
+                if (node.init.type === 'VariableDeclaration') collectTypes(node.init, currentFunc);
+                else resolveExpressionType(node.init, currentFunc);
+            }
+            if (node.test) resolveExpressionType(node.test, currentFunc);
+            if (node.update) resolveExpressionType(node.update, currentFunc);
             collectTypes(node.body, currentFunc);
         } else if (node.type === 'WhileStatement') {
+            resolveExpressionType(node.test, currentFunc);
             collectTypes(node.body, currentFunc);
+        } else if (node.type === 'ReturnStatement') {
+            if (node.argument) resolveExpressionType(node.argument, currentFunc);
         }
     }
 
     collectTypes(ast);
-
-    return { varTypes, funcParamTypes };
 }
 
 // JavaScript code emitter - converts AST to JavaScript code
 function emitJS(ast, allowedFunctions) {
-    // Collect type information (explicit and inferred)
-    const { varTypes, funcParamTypes } = collectTypeInformation(ast, allowedFunctions);
-
-    function getIdentifierType(name, context) {
-        // Check if it's a parameter of the current function
-        if (context.currentFunction && funcParamTypes[context.currentFunction] && funcParamTypes[context.currentFunction][name]) {
-            return funcParamTypes[context.currentFunction][name];
-        }
-        // Check if it's a local variable
-        const localKey = context.currentFunction ? `${context.currentFunction}.${name}` : name;
-        if (varTypes[localKey]) {
-            return varTypes[localKey];
-        }
-        // Check if it's a global variable
-        if (varTypes[name]) {
-            return varTypes[name];
-        }
-        return null;
-    }
+    // Collect type information (explicit and inferred) and decorate AST nodes
+    collectTypeInformation(ast, allowedFunctions);
 
     function emit(node, indent = 0, context = {}) {
         const indentStr = '    '.repeat(indent);
@@ -1758,26 +1774,16 @@ function emitJS(ast, allowedFunctions) {
                         // Check if this parameter expects lv_color
                         if (expectedType === 'lv_color') {
                             isLvColor = true;
-                            // If it's an identifier with lv_color type, it's already a pointer
-                            if (arg.type === 'Identifier') {
-                                const identType = getIdentifierType(arg.name, context);
-                                if (identType === 'lv_color') {
-                                    isLvColor = false; // Already a pointer, don't convert
-                                }
-                            }
-                            // If it's already a lv_color_hex call, don't convert
-                            if (arg.type === 'CallExpression' && arg.callee.type === 'Identifier' && arg.callee.name === 'lv_color_hex') {
-                                isLvColor = false; // Already a lv_color, don't convert
+                            // If it's already a pointer to lv_color, don't convert
+                            if (arg.resolvedType === 'lv_color') {
+                                isLvColor = false;
                             }
                         }
 
                         if (expectedType === 'cstring') {
-                            // Check if argument is a string literal or variable
-                            if (arg.type === 'Literal' && typeof arg.value === 'string') {
+                            // Check if argument is a string
+                            if (arg.resolvedType === 'string') {
                                 needsConversion = true;
-                            } else if (arg.type === 'Identifier') {
-                                const argType = getIdentifierType(arg.name, context);
-                                needsConversion = argType !== 'cstring' && argType === 'string';
                             }
                         }
                     }
@@ -1788,8 +1794,7 @@ function emitJS(ast, allowedFunctions) {
                     }
                     // Check if this is an identifier with string type
                     else if (arg.type === 'Identifier') {
-                        const identType = getIdentifierType(arg.name, context);
-                        if (identType === 'string' && expectsCString) {
+                        if (arg.resolvedType === 'string' && expectsCString) {
                             needsConversion = true;
                         }
                     }
@@ -1845,25 +1850,8 @@ function emitJS(ast, allowedFunctions) {
 
 // C code emitter - converts AST to C code
 function emitC(ast, allowedFunctions) {
-    // Collect type information (explicit and inferred)
-    const { varTypes, funcParamTypes } = collectTypeInformation(ast, allowedFunctions);
-
-    function getIdentifierType(name, context) {
-        // Check if it's a parameter of the current function
-        if (context.currentFunction && funcParamTypes[context.currentFunction] && funcParamTypes[context.currentFunction][name]) {
-            return funcParamTypes[context.currentFunction][name];
-        }
-        // Check if it's a local variable
-        const localKey = context.currentFunction ? `${context.currentFunction}.${name}` : name;
-        if (varTypes[localKey]) {
-            return varTypes[localKey];
-        }
-        // Check if it's a global variable
-        if (varTypes[name]) {
-            return varTypes[name];
-        }
-        return null;
-    }
+    // Collect type information (explicit and inferred) and decorate AST nodes
+    collectTypeInformation(ast, allowedFunctions);
 
     function mapTypeToCType(type) {
         if (!type) return 'void';
@@ -1910,9 +1898,7 @@ function emitC(ast, allowedFunctions) {
 
             case 'VariableDeclaration':
                 // Get type from collected types (either explicit or inferred)
-                const key = context.currentFunction ? `${context.currentFunction}.${node.name}` : node.name;
-                const collectedType = varTypes[key];
-                const varType = mapTypeToCType(collectedType);
+                const varType = mapTypeToCType(node.varType || node.resolvedType);
                 let varInit = '';
                 if (node.init) {
                     varInit = ' = ' + emit(node.init, 0, context);
@@ -1955,9 +1941,7 @@ function emitC(ast, allowedFunctions) {
                                     if (part.type === 'Literal' && typeof part.value === 'string') {
                                         formatStr += part.value;
                                     } else {
-                                        const partType = part.type === 'Identifier'
-                                            ? getIdentifierType(part.name, context)
-                                            : 'number';
+                                        const partType = part.resolvedType;
 
                                         if (partType === 'number' || !partType) {
                                             formatStr += '%d';
@@ -2073,15 +2057,12 @@ function emitC(ast, allowedFunctions) {
                         const expectedType = funcTypeInfo.params[index];
 
                         if (expectedType === 'lv_color') {
-                            // Check if it's already a lv_color_hex call
-                            if (!(arg.type === 'CallExpression' && arg.callee.type === 'Identifier' && arg.callee.name === 'lv_color_hex')) {
-                                // Check if it's a variable with lv_color type
-                                if (arg.type === 'Identifier' && getIdentifierType(arg.name, context) === 'lv_color') {
-                                    return argCode; // Already lv_color, pass as-is
-                                }
-                                // Wrap with lv_color_hex
-                                return `lv_color_hex(${argCode})`;
+                            // If it's already a pointer to lv_color, don't convert
+                            if (arg.resolvedType === 'lv_color') {
+                                return argCode;
                             }
+                            // Wrap with lv_color_hex
+                            return `lv_color_hex(${argCode})`;
                         }
                     }
 
