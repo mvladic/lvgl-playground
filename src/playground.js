@@ -561,7 +561,8 @@ class EventManager {
                 // Call the EEZ Script callback with the event pointer as a number
                 handler.callback(eventPtr);
             } catch (error) {
-                console.error('Event handler error:', error);
+                // Show error in UI instead of just console
+                handleScriptError(error);
             }
         }
     }
@@ -1457,6 +1458,62 @@ function showStatus(message) {
     setTimeout(() => status.remove(), 3000);
 }
 
+// Handle script errors (from compilation, execution, or event handlers)
+function handleScriptError(error) {
+    const errorMsg = error.message || String(error);
+    
+    // Extract line, column, and length information from error message
+    // Pattern 1: "At line X, column Y, length Z:" (from createRuntimeError with length)
+    const atLineMatchWithLength = errorMsg.match(/At line (\d+), column (\d+), length (\d+)/);
+    // Pattern 2: "At line X, column Y:" (from createRuntimeError without length)
+    const atLineMatch = errorMsg.match(/At line (\d+), column (\d+)/);
+    // Pattern 3: "line X:Y" or "line X column Y" (from lexer/parser)
+    const lineColonMatch = errorMsg.match(/line (\d+):(\d+)/i);
+    const lineColumnMatch = errorMsg.match(/line (\d+).*column (\d+)/i);
+    
+    let line = null;
+    let column = null;
+    let length = null;
+    
+    if (atLineMatchWithLength) {
+        line = parseInt(atLineMatchWithLength[1]);
+        column = parseInt(atLineMatchWithLength[2]);
+        length = parseInt(atLineMatchWithLength[3]);
+    } else if (atLineMatch) {
+        line = parseInt(atLineMatch[1]);
+        column = parseInt(atLineMatch[2]);
+    } else if (lineColonMatch) {
+        line = parseInt(lineColonMatch[1]);
+        column = parseInt(lineColonMatch[2]);
+    } else if (lineColumnMatch) {
+        line = parseInt(lineColumnMatch[1]);
+        column = parseInt(lineColumnMatch[2]);
+    }
+    
+    // Extract just the message part (remove the "At line X, column Y:" or "At line X, column Y, length Z:" prefix)
+    // Keep the "Runtime error:" or "Syntax error:" prefix in the message
+    let displayMessage = errorMsg;
+    if (atLineMatchWithLength) {
+        displayMessage = errorMsg.replace(/^At line \d+, column \d+, length \d+:\s*/, '');
+    } else if (atLineMatch) {
+        displayMessage = errorMsg.replace(/^At line \d+, column \d+:\s*/, '');
+    }
+    
+    // Show error in canvas with line/column info
+    showError(displayMessage, line, column);
+    
+    // Show inline error in Monaco editor
+    if (line) {
+        const errors = [{
+            line: line,
+            column: column || 1,
+            length: length,
+            message: displayMessage.split('\n')[0] // Only show the first line of the error
+        }];
+        showEditorErrors(errors);
+    }
+}
+
 // Show error message
 function showError(message, line = null, column = null) {
     const canvasTab = document.getElementById('canvasTab');
@@ -1529,6 +1586,11 @@ function runScript() {
                     function: lvgl.stringToNewUTF8.bind(lvgl),
                     params: ['string'],
                     returnType: 'number'
+                },
+                UTF8ToString: {
+                    function: lvgl.UTF8ToString.bind(lvgl),
+                    params: ['number'],
+                    returnType: 'string'
                 }
             }
         };
@@ -1591,60 +1653,7 @@ function runScript() {
         }
 
     } catch (error) {
-        const errorMsg = error.message || String(error);
-        
-        // Extract line, column, and length information from error message
-        // Pattern 1: "At line X, column Y, length Z:" (from createRuntimeError with length)
-        const atLineMatchWithLength = errorMsg.match(/At line (\d+), column (\d+), length (\d+)/);
-        // Pattern 2: "At line X, column Y:" (from createRuntimeError without length)
-        const atLineMatch = errorMsg.match(/At line (\d+), column (\d+)/);
-        // Pattern 3: "line X:Y" or "line X column Y" (from lexer/parser)
-        const lineColonMatch = errorMsg.match(/line (\d+):(\d+)/i);
-        const lineColumnMatch = errorMsg.match(/line (\d+).*column (\d+)/i);
-        
-        let line = null;
-        let column = null;
-        let length = null;
-        
-        if (atLineMatchWithLength) {
-            line = parseInt(atLineMatchWithLength[1]);
-            column = parseInt(atLineMatchWithLength[2]);
-            length = parseInt(atLineMatchWithLength[3]);
-        } else if (atLineMatch) {
-            line = parseInt(atLineMatch[1]);
-            column = parseInt(atLineMatch[2]);
-        } else if (lineColonMatch) {
-            line = parseInt(lineColonMatch[1]);
-            column = parseInt(lineColonMatch[2]);
-        } else if (lineColumnMatch) {
-            line = parseInt(lineColumnMatch[1]);
-            column = parseInt(lineColumnMatch[2]);
-        }
-        
-        // Extract just the message part (remove the "At line X, column Y:" or "At line X, column Y, length Z:" prefix)
-        // Keep the "Runtime error:" or "Syntax error:" prefix in the message
-        let displayMessage = errorMsg;
-        if (atLineMatchWithLength) {
-            displayMessage = errorMsg.replace(/^At line \d+, column \d+, length \d+:\s*/, '');
-        } else if (atLineMatch) {
-            displayMessage = errorMsg.replace(/^At line \d+, column \d+:\s*/, '');
-        }
-        
-        // Show error in canvas with line/column info
-        showError(displayMessage, line, column);
-        
-        // Show inline error in Monaco editor
-        if (line) {
-            const errors = [{
-                line: line,
-                column: column || 1,
-                length: length,
-                message: displayMessage.split('\n')[0] // Only show the first line of the error
-            }];
-            showEditorErrors(errors);
-        }
-        
-        // Don't log script errors to console - they're already displayed in the UI
+        handleScriptError(error);
     }
 }
 window.runScript = runScript;

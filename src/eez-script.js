@@ -891,6 +891,14 @@ class Interpreter {
 
     visitVariableDeclaration(node, scope) {
         let value = node.init ? this.visitExpression(node.init, scope) : undefined;
+        let inferredType = null;
+
+        // Infer type from initial value if no type annotation
+        if (!node.varType && value !== undefined) {
+            inferredType = this.getValueType(value);
+            // Store inferred type
+            this.variableTypes[node.name] = inferredType;
+        }
 
         // Type check if type annotation is present
         if (node.varType && value !== undefined) {
@@ -906,9 +914,11 @@ class Interpreter {
 
         scope[node.name] = value;
 
-        // Store variable type
+        // Store variable type (explicit or inferred)
         if (node.varType) {
             this.variableTypes[node.name] = node.varType;
+        } else if (inferredType) {
+            this.variableTypes[node.name] = inferredType;
         }
     }
 
@@ -954,7 +964,10 @@ class Interpreter {
         if (!this.globals.System || !this.globals.System.stringToNewUTF8) {
             throw this.createRuntimeError('System.stringToNewUTF8 is required for cstring conversion but is not available', this.currentNode);
         }
-        return this.globals.System.stringToNewUTF8(value);
+        // Ensure value is a string (convert numbers and other types to string first)
+        const stringValue = typeof value === 'string' ? value : String(value);
+        const fn = this.globals.System.stringToNewUTF8.function || this.globals.System.stringToNewUTF8;
+        return fn(stringValue);
     }
 
     visitExpressionStatement(node, scope) {
@@ -1245,6 +1258,11 @@ class Interpreter {
                 ? this.visitExpression(node.callee.property, scope)
                 : node.callee.property;
             func = thisContext[propName];
+            
+            // Handle wrapped functions (like System.UTF8ToString) that have a 'function' property
+            if (func && typeof func === 'object' && typeof func.function === 'function') {
+                func = func.function;
+            }
 
             // Build full path for global function type checking
             if (node.callee.type === 'MemberExpression' && !node.callee.computed) {
@@ -1417,6 +1435,18 @@ class Interpreter {
             }
         }
 
+        // Auto-convert cstring return values to JavaScript strings
+        if (functionName && functionName.startsWith('lv_') && functionName in this.functionTypes) {
+            const typeSpec = this.functionTypes[functionName];
+            if (typeSpec.returnType === 'cstring' && typeof returnValue === 'number' && returnValue !== 0) {
+                // Convert C string pointer to JavaScript string using System.UTF8ToString
+                if (this.globals.System && this.globals.System.UTF8ToString) {
+                    const fn = this.globals.System.UTF8ToString.function || this.globals.System.UTF8ToString;
+                    return fn(returnValue);
+                }
+            }
+        }
+
         return returnValue;
     }
 
@@ -1576,6 +1606,50 @@ function eez_script_compile(script) {
 // Shared type inference - collects type information from AST and decorates nodes
 function collectTypeInformation(ast, allowedFunctions) {
     const varTypes = {};
+    const eventHandlers = new Set();  // Track functions used as event handlers
+
+    // First pass: find event handler functions
+    function findEventHandlers(node) {
+        if (!node) return;
+
+        if (node.type === 'Program') {
+            node.body.forEach(stmt => findEventHandlers(stmt));
+        } else if (node.type === 'FunctionDeclaration') {
+            findEventHandlers(node.body);
+        } else if (node.type === 'BlockStatement') {
+            node.body.forEach(stmt => findEventHandlers(stmt));
+        } else if (node.type === 'ExpressionStatement') {
+            findEventHandlers(node.expression);
+        } else if (node.type === 'VariableDeclaration' && node.init) {
+            findEventHandlers(node.init);
+        } else if (node.type === 'CallExpression') {
+            // Check if this is lv_obj_add_event_cb or similar
+            if (node.callee.type === 'Identifier' && 
+                (node.callee.name === 'lv_obj_add_event_cb' || node.callee.name.includes('_add_event'))) {
+                // Second argument (index 1) is the event handler function
+                if (node.arguments.length >= 2 && node.arguments[1].type === 'Identifier') {
+                    eventHandlers.add(node.arguments[1].name);
+                }
+            }
+            node.arguments.forEach(arg => findEventHandlers(arg));
+        } else if (node.type === 'IfStatement') {
+            findEventHandlers(node.test);
+            findEventHandlers(node.consequent);
+            findEventHandlers(node.alternate);
+        } else if (node.type === 'ForStatement') {
+            findEventHandlers(node.init);
+            findEventHandlers(node.test);
+            findEventHandlers(node.update);
+            findEventHandlers(node.body);
+        } else if (node.type === 'WhileStatement') {
+            findEventHandlers(node.test);
+            findEventHandlers(node.body);
+        } else if (node.type === 'ReturnStatement') {
+            findEventHandlers(node.argument);
+        }
+    }
+
+    findEventHandlers(ast);
 
     // Helper to resolve type of an expression and decorate it
     function resolveExpressionType(node, currentFunc = null) {
@@ -1638,6 +1712,12 @@ function collectTypeInformation(ast, allowedFunctions) {
         if (node.type === 'Program') {
             node.body.forEach(stmt => collectTypes(stmt));
         } else if (node.type === 'FunctionDeclaration') {
+            // If this function is used as an event handler, infer first parameter as number (lv_event_t*)
+            if (eventHandlers.has(node.name) && node.params.length > 0 && !node.params[0].type) {
+                node.params[0].type = 'number';  // Will be lv_event_t* in C
+                varTypes[`${node.name}.${node.params[0].name}`] = 'number';
+            }
+            
             if (node.params) {
                 node.params.forEach(p => {
                     if (p.type) {
@@ -1867,11 +1947,19 @@ function emitJS(ast, allowedFunctions) {
 
                 const args = emittedArgs.join(', ');
 
+                // Check if this function returns cstring - wrap with System.UTF8ToString
+                const returnsCString = funcTypeInfo && funcTypeInfo.returnType === 'cstring';
+
                 if (calleePrefix) {
                     // Use actualFuncName (resolved alias) for the actual function call
-                    return `${calleePrefix}${actualFuncName}(${args})`;
+                    const callCode = `${calleePrefix}${actualFuncName}(${args})`;
+                    if (returnsCString) {
+                        return `System.UTF8ToString(${callCode})`;
+                    }
+                    return callCode;
                 } else {
-                    return `${emit(node.callee, 0, context)}(${args})`;
+                    const callCode = `${emit(node.callee, 0, context)}(${args})`;
+                    return callCode;
                 }
 
             case 'MemberExpression':
@@ -1935,15 +2023,24 @@ function emitC(ast, allowedFunctions) {
 
         switch (node.type) {
             case 'Program':
-                return node.body.map(stmt => emit(stmt, indent, context)).join('\n\n');
+                // Add includes header for string operations and LVGL
+                const codeBody = node.body.map(stmt => emit(stmt, indent, context)).join('\n\n');
+                return `#include <stdio.h>
+#include <string.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include "lvgl.h"
+
+${codeBody}`;
 
             case 'FunctionDeclaration':
                 const returnType = mapTypeToCType(node.returnType);
                 const params = node.params.map(p => {
                     let paramType = mapTypeToCType(p.type);
                     // Event callbacks receive lv_event_t* instead of int32_t
-                    if (p.type === 'number' && node.params.length === 1) {
-                        // Single number parameter likely means event callback
+                    // Check if param type is 'number' and this is likely an event handler
+                    if (p.type === 'number' && node.params.length >= 1 && node.params[0] === p) {
+                        // First parameter of type number likely means event callback
                         paramType = 'lv_event_t*';
                     }
                     return `${paramType} ${p.name}`;
@@ -1955,13 +2052,86 @@ function emitC(ast, allowedFunctions) {
             case 'VariableDeclaration':
                 // Get type from collected types (either explicit or inferred)
                 const varType = mapTypeToCType(node.varType || node.resolvedType);
-                let varInit = '';
-                if (node.init) {
-                    varInit = ' = ' + emit(node.init, 0, context);
-                }
-                return `${indentStr}${varType} ${node.name}${varInit};`;
+                const isStringType = node.varType === 'string' || node.resolvedType === 'string';
+                
+                if (isStringType) {
+                    // String variables become char arrays in C
+                    let varInit = '';
+                    if (node.init) {
+                        if (node.init.type === 'Literal' && typeof node.init.value === 'string') {
+                            varInit = ` = "${node.init.value.replace(/"/g, '\\"')}"`;
+                        } else {
+                            // Initialize with empty string, will be assigned later
+                            varInit = ' = ""';
+                        }
+                    }
+                    return `${indentStr}char ${node.name}[256]${varInit};`;
+                } else {
+                    let varInit = '';
+                    if (node.init) {
+                        varInit = ' = ' + emit(node.init, 0, context);
+                    }
+                    return `${indentStr}${varType} ${node.name}${varInit};`;
+                };
 
             case 'ExpressionStatement':
+                // Check if this is an assignment with string concatenation
+                if (node.expression.type === 'AssignmentExpression' && node.expression.operator === '=') {
+                    const leftNode = node.expression.left;
+                    const rightNode = node.expression.right;
+                    
+                    // Check if the left side is a string variable
+                    const leftType = leftNode.resolvedType;
+                    const isStringAssignment = leftType === 'string';
+                    
+                    if (isStringAssignment && leftNode.type === 'Identifier') {
+                        const varName = leftNode.name;
+                        
+                        // Check if right side is a string concatenation
+                        if (rightNode.type === 'BinaryExpression' && rightNode.operator === '+') {
+                            const parts = [];
+                            function collectConcatParts(n) {
+                                if (n.type === 'BinaryExpression' && n.operator === '+') {
+                                    collectConcatParts(n.left);
+                                    collectConcatParts(n.right);
+                                } else {
+                                    parts.push(n);
+                                }
+                            }
+                            collectConcatParts(rightNode);
+                            
+                            // Generate snprintf format string
+                            let formatStr = '';
+                            const sprintfArgs = [];
+                            
+                            parts.forEach(part => {
+                                if (part.type === 'Literal' && typeof part.value === 'string') {
+                                    formatStr += part.value;
+                                } else {
+                                    const partType = part.resolvedType;
+                                    if (partType === 'string' || partType === 'cstring') {
+                                        formatStr += '%s';
+                                    } else {
+                                        formatStr += '%d';
+                                    }
+                                    sprintfArgs.push(emit(part, 0, context));
+                                }
+                            });
+                            
+                            const argsStr = sprintfArgs.length > 0 ? ', ' + sprintfArgs.join(', ') : '';
+                            return `${indentStr}snprintf(${varName}, sizeof(${varName}), "${formatStr}"${argsStr});`;
+                        }
+                        // Simple string literal assignment
+                        else if (rightNode.type === 'Literal' && typeof rightNode.value === 'string') {
+                            return `${indentStr}strcpy(${varName}, "${rightNode.value.replace(/"/g, '\\"')}");`;
+                        }
+                        // Assignment from another string variable or function result
+                        else if (rightNode.type === 'Identifier' || rightNode.type === 'CallExpression') {
+                            return `${indentStr}strcpy(${varName}, ${emit(rightNode, 0, context)});`;
+                        }
+                    }
+                }
+                
                 // Check if this is a call with string concatenation that needs preprocessing
                 let preamble = '';
 

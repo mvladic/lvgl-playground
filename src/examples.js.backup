@@ -2,11 +2,11 @@ const EXAMPLE_SCRIPTS = {
     'simple': {
         name: '1. Simple Label',
         code: `// Simple example: Create a label in the center
-function init() {
-    let screen = lv_obj_create(0);
+function init(): lv_obj {
+    let screen: lv_obj = lv_obj_create(0);
     lv_screen_load_anim(screen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
     
-    let label = lv_label_create(screen);
+    let label: lv_obj = lv_label_create(screen);
     lv_obj_set_style_align(label, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_label_set_text(label, "Hello from EEZ Script with LVGL!");
     
@@ -16,15 +16,15 @@ function init() {
     'button': {
         name: '2. Button Example',
         code: `// Button with styled label
-function init() {
-    let screen = lv_obj_create(0);
+function init(): lv_obj {
+    let screen: lv_obj = lv_obj_create(0);
     lv_screen_load_anim(screen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
     
-    let button = lv_button_create(screen);
+    let button: lv_obj = lv_button_create(screen);
     lv_obj_set_size(button, 200, 60);
     lv_obj_set_style_align(button, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
     
-    let label = lv_label_create(button);
+    let label: lv_obj = lv_label_create(button);
     lv_obj_set_style_align(label, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_label_set_text(label, "Click Me!");
     
@@ -34,25 +34,25 @@ function init() {
     'events': {
         name: '3. Button with Click Event',
         code: `// Button with event handler
-let counter = 0;
-let labelObj = 0;
+let counter: number = 0;
+let labelObj: lv_obj = 0;
 
-function on_button_clicked(event) {
+function on_button_clicked(event: number) {
     counter = counter + 1;
     lv_label_set_text(labelObj, "Clicked " + counter + " times");
 }
 
-function init() {
-    let screen = lv_obj_create(0);
+function init(): lv_obj {
+    let screen: lv_obj = lv_obj_create(0);
     lv_screen_load_anim(screen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
     
     // Create button
-    let button = lv_button_create(screen);
+    let button: lv_obj = lv_button_create(screen);
     lv_obj_set_size(button, 250, 80);
     lv_obj_set_style_align(button, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
     
     // Create label inside button
-    let label = lv_label_create(button);
+    let label: lv_obj = lv_label_create(button);
     lv_obj_set_style_align(label, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_label_set_text(label, "Click me!");
     labelObj = label;
@@ -66,45 +66,45 @@ function init() {
     'leds': {
         name: '4. LED Indicators',
         code: `// Colorful LED indicators
-function init() {
-    let screen = lv_obj_create(0);
+function init(): lv_obj {
+    let screen: lv_obj = lv_obj_create(0);
     lv_screen_load_anim(screen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
 
     // Title
-    let title = lv_label_create(screen);
+    let title: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(title, 280, 100);
     lv_label_set_text(title, "LED Status Indicators");
 
     // Green LED
-    let led1 = lv_led_create(screen);
+    let led1: lv_obj = lv_led_create(screen);
     lv_obj_set_pos(led1, 320, 160);
     lv_obj_set_size(led1, 40, 40);
     lv_led_set_color(led1, 0x00FF00);
     lv_led_set_brightness(led1, 255);
 
-    let label1 = lv_label_create(screen);
+    let label1: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(label1, 370, 168);
     lv_label_set_text(label1, "Online");
 
     // Orange LED
-    let led2 = lv_led_create(screen);
+    let led2: lv_obj = lv_led_create(screen);
     lv_obj_set_pos(led2, 320, 220);
     lv_obj_set_size(led2, 40, 40);
     lv_led_set_color(led2, 0xFFA500);
     lv_led_set_brightness(led2, 255);
 
-    let label2 = lv_label_create(screen);
+    let label2: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(label2, 370, 228);
     lv_label_set_text(label2, "Warning");
 
     // Red LED
-    let led3 = lv_led_create(screen);
+    let led3: lv_obj = lv_led_create(screen);
     lv_obj_set_pos(led3, 320, 280);
     lv_obj_set_size(led3, 40, 40);
     lv_led_set_color(led3, 0xFF0000);
     lv_led_set_brightness(led3, 255);
 
-    let label3 = lv_label_create(screen);
+    let label3: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(label3, 370, 288);
     lv_label_set_text(label3, "Error");
 
@@ -114,24 +114,24 @@ function init() {
     'slider': {
         name: '5. Slider & Bar',
         code: `// Slider and progress bar
-function init() {
-    let screen = lv_obj_create(0);
+function init(): lv_obj {
+    let screen: lv_obj = lv_obj_create(0);
     lv_screen_load_anim(screen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
 
     // Title
-    let title = lv_label_create(screen);
+    let title: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(title, 280, 100);
     lv_label_set_text(title, "Slider & Bar Demo");
 
     // Slider
-    let slider = lv_slider_create(screen);
+    let slider: lv_obj = lv_slider_create(screen);
     lv_obj_set_pos(slider, 250, 180);
     lv_obj_set_size(slider, 300, 20);
     lv_slider_set_range(slider, 0, 100);
     lv_slider_set_value(slider, 75, 0);
 
     // Progress bar
-    let bar = lv_bar_create(screen);
+    let bar: lv_obj = lv_bar_create(screen);
     lv_obj_set_pos(bar, 250, 250);
     lv_obj_set_size(bar, 300, 30);
     lv_bar_set_range(bar, 0, 100);
@@ -143,17 +143,17 @@ function init() {
     'arc': {
         name: '6. Arc Gauge',
         code: `// Arc gauge / circular progress
-function init() {
-    let screen = lv_obj_create(0);
+function init(): lv_obj {
+    let screen: lv_obj = lv_obj_create(0);
     lv_screen_load_anim(screen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
 
     // Title
-    let title = lv_label_create(screen);
+    let title: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(title, 310, 60);
     lv_label_set_text(title, "Arc Gauge Demo");
 
     // Arc 1
-    let arc1 = lv_arc_create(screen);
+    let arc1: lv_obj = lv_arc_create(screen);
     lv_obj_set_pos(arc1, 200, 140);
     lv_obj_set_size(arc1, 150, 150);
     lv_arc_set_range(arc1, 0, 100);
@@ -162,7 +162,7 @@ function init() {
     lv_arc_set_bg_end_angle(arc1, 45);
 
     // Arc 2
-    let arc2 = lv_arc_create(screen);
+    let arc2: lv_obj = lv_arc_create(screen);
     lv_obj_set_pos(arc2, 450, 140);
     lv_obj_set_size(arc2, 150, 150);
     lv_arc_set_range(arc2, 0, 100);
@@ -176,29 +176,29 @@ function init() {
     'checkboxes': {
         name: '7. Checkbox Group',
         code: `// Checkbox group
-function init() {
-    let screen = lv_obj_create(0);
+function init(): lv_obj {
+    let screen: lv_obj = lv_obj_create(0);
     lv_screen_load_anim(screen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
 
     // Title
-    let title = lv_label_create(screen);
+    let title: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(title, 300, 80);
     lv_label_set_text(title, "Settings Panel");
 
     // Checkboxes
-    let cb1 = lv_checkbox_create(screen);
+    let cb1: lv_obj = lv_checkbox_create(screen);
     lv_obj_set_pos(cb1, 280, 150);
     lv_checkbox_set_text(cb1, "Enable notifications");
 
-    let cb2 = lv_checkbox_create(screen);
+    let cb2: lv_obj = lv_checkbox_create(screen);
     lv_obj_set_pos(cb2, 280, 200);
     lv_checkbox_set_text(cb2, "Auto-save enabled");
 
-    let cb3 = lv_checkbox_create(screen);
+    let cb3: lv_obj = lv_checkbox_create(screen);
     lv_obj_set_pos(cb3, 280, 250);
     lv_checkbox_set_text(cb3, "Dark mode");
 
-    let cb4 = lv_checkbox_create(screen);
+    let cb4: lv_obj = lv_checkbox_create(screen);
     lv_obj_set_pos(cb4, 280, 300);
     lv_checkbox_set_text(cb4, "Show advanced options");
 
@@ -208,37 +208,37 @@ function init() {
     'switches': {
         name: '8. Switch Panel',
         code: `// Switch controls
-function init() {
-    let screen = lv_obj_create(0);
+function init(): lv_obj {
+    let screen: lv_obj = lv_obj_create(0);
     lv_screen_load_anim(screen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
 
     // Title
-    let title = lv_label_create(screen);
+    let title: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(title, 300, 80);
     lv_label_set_text(title, "Control Panel");
 
     // WiFi switch
-    let label1 = lv_label_create(screen);
+    let label1: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(label1, 250, 150);
     lv_label_set_text(label1, "WiFi");
 
-    let sw1 = lv_switch_create(screen);
+    let sw1: lv_obj = lv_switch_create(screen);
     lv_obj_set_pos(sw1, 450, 145);
 
     // Bluetooth switch
-    let label2 = lv_label_create(screen);
+    let label2: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(label2, 250, 210);
     lv_label_set_text(label2, "Bluetooth");
 
-    let sw2 = lv_switch_create(screen);
+    let sw2: lv_obj = lv_switch_create(screen);
     lv_obj_set_pos(sw2, 450, 205);
 
     // Airplane mode
-    let label3 = lv_label_create(screen);
+    let label3: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(label3, 250, 270);
     lv_label_set_text(label3, "Airplane Mode");
 
-    let sw3 = lv_switch_create(screen);
+    let sw3: lv_obj = lv_switch_create(screen);
     lv_obj_set_pos(sw3, 450, 265);
 
     return screen;
@@ -247,23 +247,23 @@ function init() {
     'spinner': {
         name: '9. Spinner & Loading',
         code: `// Loading spinner
-function init() {
-    let screen = lv_obj_create(0);
+function init(): lv_obj {
+    let screen: lv_obj = lv_obj_create(0);
     lv_screen_load_anim(screen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
 
     // Title
-    let title = lv_label_create(screen);
+    let title: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(title, 320, 100);
     lv_label_set_text(title, "Loading...");
 
     // Spinner
-    let spinner = lv_spinner_create(screen);
+    let spinner: lv_obj = lv_spinner_create(screen);
     lv_obj_set_pos(spinner, 350, 180);
     lv_obj_set_size(spinner, 100, 100);
     lv_spinner_set_anim_params(spinner, 1000, 60);
 
     // Status label
-    let status = lv_label_create(screen);
+    let status: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(status, 290, 320);
     lv_label_set_text(status, "Please wait...");
 
@@ -273,17 +273,17 @@ function init() {
     'roller': {
         name: '10. Roller Selector',
         code: `// Roller selector widget
-function init() {
-    let screen = lv_obj_create(0);
+function init(): lv_obj {
+    let screen: lv_obj = lv_obj_create(0);
     lv_screen_load_anim(screen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
 
     // Title
-    let title = lv_label_create(screen);
+    let title: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(title, 300, 60);
     lv_label_set_text(title, "Select Option");
 
     // Roller
-    let roller = lv_roller_create(screen);
+    let roller: lv_obj = lv_roller_create(screen);
     lv_obj_set_pos(roller, 320, 120);
     lv_roller_set_options(roller, "Option 1\\nOption 2\\nOption 3\\nOption 4\\nOption 5\\nOption 6\\nOption 7", 0);
     lv_roller_set_selected(roller, 2, 0);
@@ -294,20 +294,20 @@ function init() {
     'dashboard': {
         name: '11. Full Dashboard',
         code: `// Create a title label with custom styling
-function create_title(parent, text, x, y) {
-    let label = lv_label_create(parent);
+function create_title(parent: lv_obj, text: string, x: number, y: number): lv_obj {
+    let label: lv_obj = lv_label_create(parent);
     lv_obj_set_pos(label, x, y);
     lv_label_set_text(label, text);
     return label;
 }
 
 // Create a button with label
-function create_button(parent, label_text, x, y, w, h) {
-    let button = lv_button_create(parent);
+function create_button(parent: lv_obj, label_text: string, x: number, y: number, w: number, h: number): lv_obj {
+    let button: lv_obj = lv_button_create(parent);
     lv_obj_set_pos(button, x, y);
     lv_obj_set_size(button, w, h);
 
-    let label = lv_label_create(button);
+    let label: lv_obj = lv_label_create(button);
     lv_obj_set_size(label, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     lv_obj_set_style_align(label, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_label_set_text(label, label_text);
@@ -316,12 +316,12 @@ function create_button(parent, label_text, x, y, w, h) {
 }
 
 // Create a slider with label
-function create_slider_panel(parent, label_text, x, y) {
-    let label = lv_label_create(parent);
+function create_slider_panel(parent: lv_obj, label_text: string, x: number, y: number): lv_obj {
+    let label: lv_obj = lv_label_create(parent);
     lv_obj_set_pos(label, x, y);
     lv_label_set_text(label, label_text);
 
-    let slider = lv_slider_create(parent);
+    let slider: lv_obj = lv_slider_create(parent);
     lv_obj_set_pos(slider, x, y + 30);
     lv_obj_set_size(slider, 200, 10);
     lv_slider_set_range(slider, 0, 100);
@@ -331,24 +331,24 @@ function create_slider_panel(parent, label_text, x, y) {
 }
 
 // Create a switch with label
-function create_switch_panel(parent, label_text, x, y) {
-    let label = lv_label_create(parent);
+function create_switch_panel(parent: lv_obj, label_text: string, x: number, y: number): lv_obj {
+    let label: lv_obj = lv_label_create(parent);
     lv_obj_set_pos(label, x, y);
     lv_label_set_text(label, label_text);
 
-    let sw = lv_switch_create(parent);
+    let sw: lv_obj = lv_switch_create(parent);
     lv_obj_set_pos(sw, x + 120, y - 5);
 
     return sw;
 }
 
 // Create an arc widget
-function create_arc_panel(parent, label_text, x, y) {
-    let label = lv_label_create(parent);
+function create_arc_panel(parent: lv_obj, label_text: string, x: number, y: number): lv_obj {
+    let label: lv_obj = lv_label_create(parent);
     lv_obj_set_pos(label, x + 30, y - 25);
     lv_label_set_text(label, label_text);
 
-    let arc = lv_arc_create(parent);
+    let arc: lv_obj = lv_arc_create(parent);
     lv_obj_set_pos(arc, x, y);
     lv_obj_set_size(arc, 120, 120);
     lv_arc_set_range(arc, 0, 100);
@@ -360,12 +360,12 @@ function create_arc_panel(parent, label_text, x, y) {
 }
 
 // Create a bar widget
-function create_bar_panel(parent, label_text, x, y) {
-    let label = lv_label_create(parent);
+function create_bar_panel(parent: lv_obj, label_text: string, x: number, y: number): lv_obj {
+    let label: lv_obj = lv_label_create(parent);
     lv_obj_set_pos(label, x, y);
     lv_label_set_text(label, label_text);
 
-    let bar = lv_bar_create(parent);
+    let bar: lv_obj = lv_bar_create(parent);
     lv_obj_set_pos(bar, x, y + 30);
     lv_obj_set_size(bar, 200, 20);
     lv_bar_set_range(bar, 0, 100);
@@ -375,8 +375,8 @@ function create_bar_panel(parent, label_text, x, y) {
 }
 
 // Create a checkbox
-function create_checkbox_panel(parent, label_text, x, y) {
-    let checkbox = lv_checkbox_create(parent);
+function create_checkbox_panel(parent: lv_obj, label_text: string, x: number, y: number): lv_obj {
+    let checkbox: lv_obj = lv_checkbox_create(parent);
     lv_obj_set_pos(checkbox, x, y);
     lv_checkbox_set_text(checkbox, label_text);
 
@@ -384,12 +384,12 @@ function create_checkbox_panel(parent, label_text, x, y) {
 }
 
 // Create LED indicator
-function create_led_panel(parent, label_text, x, y, color) {
-    let label = lv_label_create(parent);
+function create_led_panel(parent: lv_obj, label_text: string, x: number, y: number, color: number): lv_obj {
+    let label: lv_obj = lv_label_create(parent);
     lv_obj_set_pos(label, x + 30, y + 5);
     lv_label_set_text(label, label_text);
 
-    let led = lv_led_create(parent);
+    let led: lv_obj = lv_led_create(parent);
     lv_obj_set_pos(led, x, y);
     lv_obj_set_size(led, 20, 20);
     lv_led_set_color(led, color);
@@ -399,8 +399,8 @@ function create_led_panel(parent, label_text, x, y, color) {
 }
 
 // Main screen initialization function
-function init() {
-    let screen = lv_obj_create(0);
+function init(): lv_obj {
+    let screen: lv_obj = lv_obj_create(0);
     lv_screen_load_anim(screen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
 
     // Dashboard Title
@@ -444,30 +444,30 @@ function init() {
         name: '12. Multi-Screen Navigation',
         code: `// Multi-screen app with navigation
 // Global screens
-let homeScreen = 0;
-let settingsScreen = 0;
-let aboutScreen = 0;
+let homeScreen: lv_obj = 0;
+let settingsScreen: lv_obj = 0;
+let aboutScreen: lv_obj = 0;
 
 // Navigation handlers
-function go_to_settings(event) {
+function go_to_settings(event: number) {
     lv_screen_load_anim(settingsScreen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
 }
 
-function go_to_about(event) {
+function go_to_about(event: number) {
     lv_screen_load_anim(aboutScreen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
 }
 
-function go_to_home(event) {
+function go_to_home(event: number) {
     lv_screen_load_anim(homeScreen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
 }
 
 // Create navigation button helper
-function create_nav_button(parent, text, x, y, handler) {
-    let btn = lv_button_create(parent);
+function create_nav_button(parent: lv_obj, text: string, x: number, y: number, handler: function): lv_obj {
+    let btn: lv_obj = lv_button_create(parent);
     lv_obj_set_pos(btn, x, y);
     lv_obj_set_size(btn, 200, 50);
     
-    let label = lv_label_create(btn);
+    let label: lv_obj = lv_label_create(btn);
     lv_obj_set_style_align(label, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_label_set_text(label, text);
     
@@ -477,16 +477,16 @@ function create_nav_button(parent, text, x, y, handler) {
 }
 
 // Create Home Screen
-function create_home_screen() {
-    let screen = lv_obj_create(0);
+function create_home_screen(): lv_obj {
+    let screen: lv_obj = lv_obj_create(0);
     
     // Title
-    let title = lv_label_create(screen);
+    let title: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(title, 300, 80);
     lv_label_set_text(title, "Home Screen");
     
     // Description
-    let desc = lv_label_create(screen);
+    let desc: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(desc, 200, 150);
     lv_label_set_text(desc, "Welcome! Navigate between screens using buttons.");
     
@@ -498,27 +498,27 @@ function create_home_screen() {
 }
 
 // Create Settings Screen
-function create_settings_screen() {
-    let screen = lv_obj_create(0);
+function create_settings_screen(): lv_obj {
+    let screen: lv_obj = lv_obj_create(0);
     
     // Title
-    let title = lv_label_create(screen);
+    let title: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(title, 280, 80);
     lv_label_set_text(title, "Settings Screen");
     
     // Some settings controls
-    let label1 = lv_label_create(screen);
+    let label1: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(label1, 200, 150);
     lv_label_set_text(label1, "Enable Notifications");
     
-    let sw1 = lv_switch_create(screen);
+    let sw1: lv_obj = lv_switch_create(screen);
     lv_obj_set_pos(sw1, 500, 145);
     
-    let label2 = lv_label_create(screen);
+    let label2: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(label2, 200, 200);
     lv_label_set_text(label2, "Dark Mode");
     
-    let sw2 = lv_switch_create(screen);
+    let sw2: lv_obj = lv_switch_create(screen);
     lv_obj_set_pos(sw2, 500, 195);
     
     // Back button
@@ -528,24 +528,24 @@ function create_settings_screen() {
 }
 
 // Create About Screen
-function create_about_screen() {
-    let screen = lv_obj_create(0);
+function create_about_screen(): lv_obj {
+    let screen: lv_obj = lv_obj_create(0);
     
     // Title
-    let title = lv_label_create(screen);
+    let title: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(title, 300, 80);
     lv_label_set_text(title, "About Screen");
     
     // Info
-    let info = lv_label_create(screen);
+    let info: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(info, 200, 150);
     lv_label_set_text(info, "LVGL Playground Demo");
     
-    let version = lv_label_create(screen);
+    let version: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(version, 200, 180);
     lv_label_set_text(version, "Version: 1.0.0");
     
-    let desc = lv_label_create(screen);
+    let desc: lv_obj = lv_label_create(screen);
     lv_obj_set_pos(desc, 200, 220);
     lv_label_set_text(desc, "Multi-screen navigation example with events.");
     
@@ -557,7 +557,7 @@ function create_about_screen() {
 }
 
 // Main initialization
-function init() {
+function init(): lv_obj {
     // Create all screens
     homeScreen = create_home_screen();
     settingsScreen = create_settings_screen();
@@ -567,188 +567,6 @@ function init() {
     lv_screen_load_anim(homeScreen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
     
     return homeScreen;
-}`
-    },
-    'calculator': {
-        name: '11. Calculator',
-        code: `// Fully functional calculator
-let displayLabel = 0;
-let currentValue = "0";
-let previousValue = 0;
-let operation = "";
-let newNumber = true;
-
-function update_display() {
-    lv_label_set_text(displayLabel, currentValue);
-}
-
-function on_number_clicked(event) {
-    let target = lv_event_get_target(event);
-    let digit = lv_label_get_text(lv_obj_get_child(target, 0));
-    
-    if (newNumber) {
-        currentValue = digit;
-        newNumber = false;
-    } else {
-        if (currentValue == "0") {
-            currentValue = digit;
-        } else {
-            currentValue = currentValue + digit;
-        }
-    }
-    update_display();
-}
-
-function on_operator_clicked(event) {
-    let target = lv_event_get_target(event);
-    let op = lv_label_get_text(lv_obj_get_child(target, 0));
-    
-    if (operation != "" && !newNumber) {
-        on_equals_clicked(0);
-    }
-    
-    previousValue = currentValue;
-    operation = op;
-    newNumber = true;
-}
-
-function on_equals_clicked(event) {
-    if (operation == "") {
-        return;
-    }
-    
-    let prev = previousValue * 1;
-    let curr = currentValue * 1;
-    let result = 0;
-    
-    if (operation == "+") {
-        result = prev + curr;
-    }
-    if (operation == "-") {
-        result = prev - curr;
-    }
-    if (operation == "*") {
-        result = prev * curr;
-    }
-    if (operation == "/") {
-        if (curr != 0) {
-            result = prev / curr;
-        } else {
-            currentValue = "Error";
-            operation = "";
-            newNumber = true;
-            update_display();
-            return;
-        }
-    }
-    
-    currentValue = "" + result;
-    operation = "";
-    newNumber = true;
-    update_display();
-}
-
-function on_clear_clicked(event) {
-    currentValue = "0";
-    previousValue = 0;
-    operation = "";
-    newNumber = true;
-    update_display();
-}
-
-function create_button(parent, x, y, w, h, text, callback) {
-    let btn = lv_button_create(parent);
-    lv_obj_set_pos(btn, x, y);
-    lv_obj_set_size(btn, w, h);
-    lv_obj_set_style_radius(btn, 8, 0);
-    
-    let label = lv_label_create(btn);
-    lv_label_set_text(label, text);
-    lv_obj_center(label);
-    
-    lv_obj_add_event_cb(btn, callback, LV_EVENT_CLICKED, 0);
-    
-    return btn;
-}
-
-function init() {
-    let screen = lv_obj_create(0);
-    lv_screen_load_anim(screen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
-    lv_obj_set_style_bg_color(screen, 0x1a1a1a, 0);
-    
-    // Calculator dimensions
-    let btnW = 70;
-    let btnH = 60;
-    let gap = 15;
-    let displayW = btnW * 4 + gap * 3;  // Same width as button grid
-    let displayH = 70;
-    
-    // Calculate total calculator size
-    let calcW = displayW;
-    let calcH = displayH + gap + (btnH + gap) * 5 - gap;  // display + 5 rows of buttons
-    
-    // Center on 800x480 screen
-    let startX = (800 - calcW) / 2;
-    let startY = (480 - calcH) / 2;
-    
-    // Display area
-    let display = lv_obj_create(screen);
-    lv_obj_set_pos(display, startX, startY);
-    lv_obj_set_size(display, displayW, displayH);
-    lv_obj_set_style_bg_color(display, 0x2d2d2d, 0);
-    lv_obj_set_style_border_width(display, 0, 0);
-    lv_obj_set_style_radius(display, 10, 0);
-    
-    displayLabel = lv_label_create(display);
-    lv_label_set_text(displayLabel, "0");
-    lv_obj_set_style_text_color(displayLabel, 0xffffff, 0);
-    lv_obj_align(displayLabel, LV_ALIGN_RIGHT_MID, -10, 0);
-    
-    // Button grid starts below display
-    let btnStartY = startY + displayH + gap;
-    
-    // Number buttons (7-9)
-    create_button(screen, startX, btnStartY, btnW, btnH, "7", on_number_clicked);
-    create_button(screen, startX + btnW + gap, btnStartY, btnW, btnH, "8", on_number_clicked);
-    create_button(screen, startX + (btnW + gap) * 2, btnStartY, btnW, btnH, "9", on_number_clicked);
-    
-    // Number buttons (4-6)
-    create_button(screen, startX, btnStartY + btnH + gap, btnW, btnH, "4", on_number_clicked);
-    create_button(screen, startX + btnW + gap, btnStartY + btnH + gap, btnW, btnH, "5", on_number_clicked);
-    create_button(screen, startX + (btnW + gap) * 2, btnStartY + btnH + gap, btnW, btnH, "6", on_number_clicked);
-    
-    // Number buttons (1-3)
-    create_button(screen, startX, btnStartY + (btnH + gap) * 2, btnW, btnH, "1", on_number_clicked);
-    create_button(screen, startX + btnW + gap, btnStartY + (btnH + gap) * 2, btnW, btnH, "2", on_number_clicked);
-    create_button(screen, startX + (btnW + gap) * 2, btnStartY + (btnH + gap) * 2, btnW, btnH, "3", on_number_clicked);
-    
-    // Zero and decimal
-    create_button(screen, startX, btnStartY + (btnH + gap) * 3, btnW * 2 + gap, btnH, "0", on_number_clicked);
-    
-    // Operator buttons
-    let opX = startX + (btnW + gap) * 3;
-    let opBtn = create_button(screen, opX, btnStartY, btnW, btnH, "/", on_operator_clicked);
-    lv_obj_set_style_bg_color(opBtn, 0xff9500, 0);
-    
-    opBtn = create_button(screen, opX, btnStartY + btnH + gap, btnW, btnH, "*", on_operator_clicked);
-    lv_obj_set_style_bg_color(opBtn, 0xff9500, 0);
-    
-    opBtn = create_button(screen, opX, btnStartY + (btnH + gap) * 2, btnW, btnH, "-", on_operator_clicked);
-    lv_obj_set_style_bg_color(opBtn, 0xff9500, 0);
-    
-    opBtn = create_button(screen, opX, btnStartY + (btnH + gap) * 3, btnW, btnH, "+", on_operator_clicked);
-    lv_obj_set_style_bg_color(opBtn, 0xff9500, 0);
-    
-    // Clear button
-    let clearBtn = create_button(screen, startX + (btnW + gap) * 2, btnStartY + (btnH + gap) * 3, btnW, btnH, "C", on_clear_clicked);
-    lv_obj_set_style_bg_color(clearBtn, 0xd4d4d2, 0);
-    lv_obj_set_style_text_color(lv_obj_get_child(clearBtn, 0), 0x000000, 0);
-    
-    // Equals button
-    let equalsBtn = create_button(screen, opX, btnStartY + (btnH + gap) * 4, btnW, btnH, "=", on_equals_clicked);
-    lv_obj_set_style_bg_color(equalsBtn, 0xff9500, 0);
-    
-    return screen;
 }`
     }
 };
