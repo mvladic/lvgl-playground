@@ -6,9 +6,21 @@ Interactive playground for testing EEZ Script with LVGL graphics library.
 
 - **Interactive Code Editor**: Write EEZ Script code with TypeScript-style syntax
 - **Live Preview**: See your LVGL UI rendered in real-time on HTML5 Canvas
+- **Multiple LVGL Versions**: Support for LVGL 8.4.0, 9.2.2, 9.3.0, and 9.4.0
 - **Multiple Output Modes**: View generated JavaScript and C code
+- **Comprehensive Help**: Searchable documentation with function descriptions and parameter info
 - **Example Scripts**: 10+ pre-built examples demonstrating different LVGL widgets
 - **LocalStorage Persistence**: Your code is automatically saved
+
+## LVGL Version Support
+
+The playground supports multiple LVGL versions. Select a version from the dropdown in the toolbar:
+- **8.4.0** - Legacy version
+- **9.2.2** - Default version
+- **9.3.0** - Stable version
+- **9.4.0** - Latest features
+
+API data for each version is loaded from JSON files in the `data/` directory.
 
 ## EEZ Script Language
 
@@ -16,7 +28,7 @@ EEZ Script is a TypeScript-inspired language with:
 - Static typing: `number`, `bool`, `string`, `lv_obj`, `lv_color`
 - Implicit conversions: `string` → `cstring`, `number` → `lv_color`
 - Function declarations with type annotations
-- Access to 170+ LVGL functions
+- Access to LVGL functions (version-dependent)
 
 ## Quick Start
 
@@ -32,7 +44,9 @@ EEZ Script is a TypeScript-inspired language with:
 
 2. Open your browser to `http://localhost:8080`
 
-3. Try the examples from the dropdown or write your own code!
+3. Select an LVGL version from the dropdown (optional)
+
+4. Try the examples from the dropdown or write your own code!
 
 ## Example Code
 
@@ -53,10 +67,21 @@ function create_button(): lv_obj {
 
 ## Project Structure
 
-- `index.html` - Main playground interface
-- `eez-script.js` - EEZ Script compiler/interpreter
-- `allowed_functions.js` - LVGL function definitions
-- `run.sh` - Quick start script
+```
+├── index.html           - Main playground interface
+├── src/
+│   ├── eez-script.js   - EEZ Script compiler/interpreter
+│   ├── lvgl-api.js     - LVGL API manager (multi-version support)
+│   ├── examples.js     - Example scripts
+│   └── playground.js   - Main application logic
+├── data/
+│   ├── lvgl-v8.4.0-api.json  - LVGL 8.4.0 API definitions
+│   ├── lvgl-v9.2.2-api.json  - LVGL 9.2.2 API definitions
+│   ├── lvgl-v9.3.0-api.json  - LVGL 9.3.0 API definitions
+│   └── lvgl-v9.4.0-api.json  - LVGL 9.4.0 API definitions
+└── wasm/
+    └── lvgl_runtime_*.js     - WASM runtime files
+```
 
 ## WASM Files
 

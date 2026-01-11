@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LVGL Playground</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -52,6 +53,7 @@
             flex-direction: column;
             min-width: 20%;
             max-width: 80%;
+            min-height: 0;
         }
 
         .splitter {
@@ -78,12 +80,14 @@
         }
 
         .toolbar {
-            padding: 0.75rem;
+            padding: 0.75rem 2rem;
             border-bottom: 1px solid #ddd;
             display: flex;
             gap: 0.5rem;
             align-items: center;
             flex-wrap: wrap;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
         .toolbar select,
@@ -115,10 +119,17 @@
             background: #7f8c8d;
         }
 
+        .toolbar button.secondary.active {
+            background: #3498db;
+            color: white;
+        }
+
         .code-editor {
             flex: 1;
             display: flex;
             position: relative;
+            min-height: 0;
+            overflow: hidden;
         }
 
         .copy-button {
@@ -149,25 +160,77 @@
         #scriptInput {
             width: 100%;
             height: 100%;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
-            font-size: 13px;
-            line-height: 1.6;
             border: none;
-            outline: none;
-            resize: none;
-            tab-size: 4;
-            padding: 1rem;
-            white-space: pre;
-            overflow-x: auto;
-            word-wrap: normal;
+            overflow: hidden;
+            flex: 1;
+            min-height: 0;
         }
 
         .preview-panel {
             flex: 1;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             background: white;
             min-width: 0;
+            min-height: 0;
+        }
+
+        .tabs-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            min-height: 0;
+        }
+
+        /* Help Panel (collapsible, right side) */
+        .help-panel {
+            background: white;
+            border-left: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            width: 30%;
+            min-width: 300px;
+            max-width: 50%;
+        }
+
+        .help-panel.hidden {
+            display: none;
+        }
+
+        .help-splitter {
+            width: 5px;
+            background: #ddd;
+            cursor: col-resize;
+            flex-shrink: 0;
+            position: relative;
+            transition: background 0.2s;
+        }
+
+        .help-splitter:hover,
+        .help-splitter.dragging {
+            background: #3498db;
+        }
+
+        .help-splitter::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -2px;
+            right: -2px;
+            bottom: 0;
+        }
+
+        .help-panel.hidden + .help-splitter,
+        .help-splitter.hidden {
+            display: none;
+        }
+
+        .help-panel-content {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
             min-height: 0;
         }
 
@@ -230,14 +293,28 @@
 
         .code-output {
             position: relative;
-            padding: 1rem;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
-            font-size: 13px;
-            line-height: 1.6;
-            white-space: pre;
-            overflow: auto;
             flex: 1;
             min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .code-output > div {
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        /* Inline error decoration styling for Monaco Editor */
+        .inline-error-decoration {
+            color: #e74c3c !important;
+            font-style: italic;
+            opacity: 0.8;
+            margin-left: 1rem;
+            background: #ffe6e6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
         }
 
         .error {
@@ -271,12 +348,13 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
-        /* Help tab */
+        /* Help container in panel */
         .help-container {
-            padding: 1.25rem;
             display: flex;
             flex-direction: column;
             min-height: 0;
+            flex: 1;
+            padding: 0.75rem;
         }
 
         .help-layout {
@@ -287,14 +365,14 @@
         }
 
         .help-toc {
-            width: 280px;
-            flex: 0 0 280px;
+            width: 200px;
+            flex-shrink: 0;
             border: 1px solid #ddd;
             border-radius: 6px;
-            background: white;
+            padding: 0.5rem;
             overflow: auto;
             min-height: 0;
-            padding: 0.75rem;
+            background: white;
         }
 
         .help-toc h3 {
@@ -304,6 +382,7 @@
         }
 
         .help-toc button {
+            display: block;
             width: 100%;
             text-align: left;
             padding: 0.4rem 0.5rem;
@@ -313,6 +392,9 @@
             cursor: pointer;
             font-size: 0.875rem;
             color: #2c3e50;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .help-toc button:hover {
@@ -324,12 +406,38 @@
             font-weight: 600;
         }
 
+        .help-toc button.toc-subitem {
+            padding-left: 1rem;
+            font-size: 0.8rem;
+        }
+
+        .help-toc button.toc-parent {
+            font-weight: 600;
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        .help-toc button.toc-parent::before {
+            content: '▶';
+            position: absolute;
+            left: 0.3rem;
+            transition: transform 0.2s;
+            font-size: 0.7rem;
+        }
+
+        .help-toc button.toc-parent.expanded::before {
+            transform: rotate(90deg);
+        }
+
+        .help-toc button.toc-subitem.collapsed {
+            display: none;
+        }
+
         .help-content {
             flex: 1;
             min-width: 0;
             min-height: 0;
             overflow: auto;
-            padding-right: 0.25rem;
         }
 
         .help-container h2 {
@@ -346,10 +454,22 @@
 
         .help-section {
             background: white;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            padding: 1rem;
-            margin: 1rem 0;
+        }
+
+        .help-section-header {
+            margin-top: 2rem;
+            padding: 0.5rem 0;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .help-section-header h2 {
+            color: #2c3e50;
+            margin: 0;
+        }
+
+        .help-version-info {
+            background: #e8f4f8;
+            border-color: #3498db;
         }
 
         .help-section h3 {
@@ -366,6 +486,82 @@
         .help-section li {
             margin: 0.25rem 0;
             line-height: 1.45;
+        }
+
+        .help-section ul.function-list {
+            list-style: none;
+            margin-left: 0;
+        }
+
+        .help-section ul.function-list li {
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+
+        .help-section ul.function-list li:last-child {
+            margin-bottom: 0;
+        }
+
+        .function-signature code {
+            background: #f0f0f0;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.9rem;
+        }
+
+        .function-description {
+            color: #555;
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+
+        .function-params {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+
+        .function-params ul {
+            margin-left: 1rem;
+            margin-bottom: 0;
+        }
+
+        .function-params li {
+            margin: 0.1rem 0;
+        }
+
+        .function-returns {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+
+        .constants-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .constants-table th,
+        .constants-table td {
+            padding: 0.4rem 0.6rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .constants-table th {
+            background: #f5f5f5;
+            font-weight: 600;
+        }
+
+        .constants-table code {
+            background: #f0f0f0;
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            font-size: 0.85rem;
         }
 
         .help-snippet {
@@ -390,6 +586,37 @@
             top: 0.5rem;
             right: 0.5rem;
         }
+
+        .copy-inline {
+            position: relative;
+            top: 0;
+            right: 0;
+            margin-left: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.7rem;
+            opacity: 0.6;
+            z-index: 1;
+        }
+
+        .copy-inline:hover {
+            opacity: 1;
+        }
+
+        .function-signature {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .function-signature code {
+            flex: 1;
+        }
+
+        .constants-table td:first-child {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
     </style>
 </head>
 
@@ -399,72 +626,70 @@
         <p>Interactive environment for testing EEZ Script with LVGL</p>
     </div>
 
+    <div class="toolbar">
+        <select id="versionSelect" title="Select LVGL Version">
+            <option value="">Loading versions...</option>
+        </select>
+        <select id="exampleSelect">
+            <option value="">Select Example...</option>
+        </select>
+        <button onclick="runScript()">▶ Run</button>
+        <button class="secondary" onclick="clearEditor()">Clear</button>
+        <button class="secondary" onclick="saveScript()">💾 Save</button>
+        <div style="flex: 1;"></div>
+        <button class="secondary" onclick="toggleHelp()" id="helpToggleBtn">📖 Help</button>
+    </div>
+
     <div class="container">
         <div class="editor-panel">
-            <div class="toolbar">
-                <select id="exampleSelect">
-                    <option value="">Select Example...</option>
-                </select>
-                <button onclick="runScript()">▶ Run</button>
-                <button class="secondary" onclick="clearEditor()">Clear</button>
-                <button class="secondary" onclick="saveScript()">💾 Save</button>
-            </div>
             <div class="code-editor">
-                <button class="copy-button" onclick="copyToClipboard('scriptInput')">📋 Copy</button>
-                <textarea id="scriptInput" placeholder="Enter your EEZ Script here..." spellcheck="false"></textarea>
+                <button class="copy-button" onclick="copyEditorToClipboard()">📋 Copy</button>
+                <div id="scriptInput"></div>
             </div>
         </div>
 
         <div class="splitter" id="splitter"></div>
 
         <div class="preview-panel">
-            <div class="tabs">
-                <div class="tab active" onclick="switchTab('canvas')">Canvas</div>
-                <div class="tab" onclick="switchTab('javascript')">JavaScript</div>
-                <div class="tab" onclick="switchTab('c')">C</div>
-                <div class="tab" onclick="switchTab('help')">Help</div>
-            </div>
+            <div class="tabs-area">
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('canvas')">Canvas</div>
+                    <div class="tab" onclick="switchTab('javascript')">JavaScript</div>
+                    <div class="tab" onclick="switchTab('c')">C</div>
+                </div>
 
-            <div id="canvasTab" class="tab-content active">
-                <div class="canvas-container">
-                    <canvas id="canvas"></canvas>
+                <div id="canvasTab" class="tab-content active">
+                    <div class="canvas-container">
+                        <canvas id="canvas"></canvas>
+                    </div>
+                </div>
+
+                <div id="javascriptTab" class="tab-content">
+                    <div class="code-output">
+                        <button class="copy-button" onclick="copyToClipboard('jsOutputContent')">📋 Copy</button>
+                        <div id="jsOutput"></div>
+                    </div>
+                </div>
+
+                <div id="cTab" class="tab-content">
+                    <div class="code-output">
+                        <button class="copy-button" onclick="copyToClipboard('cOutputContent')">📋 Copy</button>
+                        <div id="cOutput"></div>
+                    </div>
                 </div>
             </div>
 
-            <div id="javascriptTab" class="tab-content">
-                <div class="code-output">
-                    <button class="copy-button" onclick="copyToClipboard('jsOutputContent')">📋 Copy</button>
-                    <div id="jsOutput"></div>
-                </div>
-            </div>
+            <div class="help-splitter" id="helpSplitter"></div>
 
-            <div id="cTab" class="tab-content">
-                <div class="code-output">
-                    <button class="copy-button" onclick="copyToClipboard('cOutputContent')">📋 Copy</button>
-                    <div id="cOutput"></div>
-                </div>
-            </div>
-
-            <div id="helpTab" class="tab-content">
-                <div class="help-container">
-                    <h2>Playground Help</h2>
-                    <p>
-                        This page is generated from <code>src/lvgl-functions.js</code> (the whitelist of LVGL APIs
-                        available to EEZ Script in this playground). It groups functions by prefix (usually a widget
-                        name) and generates copy/paste-ready EEZ Script snippets.
-                    </p>
-                    <p>
-                        Notes: <strong>string → cstring</strong> conversions are automatic for relevant LVGL calls.
-                        Colors can be passed as hex numbers like <code>0xFF0000</code> and will be converted when
-                        a function expects <code>lv_color</code>.
-                    </p>
-
-                    <div class="help-layout">
-                        <div class="help-toc">
-                            <h3>Contents</h3>
-                            <div id="helpToc"></div>
+            <div class="help-panel" id="helpPanel">
+                <div class="help-panel-content" id="helpPanelContent">
+                    <div class="help-container">
+                        <div class="help-layout">
+                            <div class="help-toc">
+                                <div id="helpToc"></div>
+                            </div>
+                            <div class="help-content" id="helpContent"></div>
                         </div>
-                        <div class="help-content" id="helpContent"></div>
                     </div>
                 </div>
             </div>
@@ -472,26 +697,19 @@
     </div>
 
     <script>
-        let module = {};
-        let __dirname = "./wasm";
-    </script>
-
-    <script src="wasm/lvgl_runtime_v9.2.2.js"></script>
-
-    <script>
-        const lvglConstructor = module["exports"];
-        module = undefined;
+        // Global variables needed by emscripten-generated WASM code
+        var module = {};
+        var __dirname = "./wasm";
     </script>
 
     <script src="./src/eez-script.js"></script>
-    <script src="./src/lvgl-functions.js"></script>
-    <script src="./src/lvgl-constants.js"></script>
+    <script src="./src/lvgl-api.js"></script>
     <script src="./src/examples.js"></script>
     <script src="./src/playground.js"></script>
 
     <script>
-        const wasm = lvglConstructor(onWasmLoaded);
-        __dirname = undefined;
+        // Initialize the playground - it will load the appropriate WASM module
+        initPlayground();
     </script>
 
 </body>

@@ -58,6 +58,8 @@ class Lexer {
     }
 
     readNumber() {
+        const startLine = this.line;
+        const startColumn = this.column;
         let num = '';
 
         // Check for hexadecimal (0x or 0X prefix)
@@ -67,17 +69,19 @@ class Lexer {
             while (this.pos < this.input.length && /[0-9a-fA-F]/.test(this.peek())) {
                 num += this.advance();
             }
-            return { type: 'NUMBER', value: parseInt(num, 16) };
+            return { type: 'NUMBER', value: parseInt(num, 16), line: startLine, column: startColumn };
         }
 
         // Regular decimal number
         while (this.pos < this.input.length && /[0-9.]/.test(this.peek())) {
             num += this.advance();
         }
-        return { type: 'NUMBER', value: parseFloat(num) };
+        return { type: 'NUMBER', value: parseFloat(num), line: startLine, column: startColumn };
     }
 
     readString(quote) {
+        const startLine = this.line;
+        const startColumn = this.column;
         this.advance(); // skip opening quote
         let str = '';
         while (this.pos < this.input.length && this.peek() !== quote) {
@@ -98,10 +102,13 @@ class Lexer {
             }
         }
         this.advance(); // skip closing quote
-        return { type: 'STRING', value: str };
+        return { type: 'STRING', value: str, line: startLine, column: startColumn };
     }
 
     readIdentifier() {
+        const startLine = this.line;
+        const startColumn = this.column;
+        const startPos = this.pos;
         let id = '';
         while (this.pos < this.input.length && /[a-zA-Z0-9_]/.test(this.peek())) {
             id += this.advance();
@@ -128,14 +135,17 @@ class Lexer {
             'lv_color': 'TYPE_LV_COLOR'
         };
 
-        return { type: keywords[id] || 'IDENTIFIER', value: id };
+        return { type: keywords[id] || 'IDENTIFIER', value: id, line: startLine, column: startColumn, length: this.pos - startPos };
     }
 
     nextToken() {
         this.skipWhitespace();
 
+        const tokenLine = this.line;
+        const tokenColumn = this.column;
+
         if (this.pos >= this.input.length) {
-            return { type: 'EOF' };
+            return { type: 'EOF', line: tokenLine, column: tokenColumn };
         }
 
         const ch = this.peek();
@@ -173,7 +183,7 @@ class Lexer {
         if (operators2.includes(doubleChar)) {
             this.advance();
             this.advance();
-            return { type: doubleChar, value: doubleChar };
+            return { type: doubleChar, value: doubleChar, line: tokenLine, column: tokenColumn, length: 2 };
         }
 
         const singleChar = {
@@ -193,10 +203,10 @@ class Lexer {
 
         if (singleChar[ch]) {
             this.advance();
-            return { type: singleChar[ch], value: ch };
+            return { type: singleChar[ch], value: ch, line: tokenLine, column: tokenColumn, length: 1 };
         }
 
-        throw new Error(`Unexpected character '${ch}' at line ${this.line}:${this.column}`);
+        throw new Error(`Syntax error: Unexpected character '${ch}' at line ${this.line}:${this.column}`);
     }
 
     tokenize() {
@@ -231,7 +241,8 @@ class Parser {
     expect(type) {
         const token = this.advance();
         if (token.type !== type) {
-            throw new Error(`Expected ${type} but got ${token.type}`);
+            const location = token.line && token.column ? ` at line ${token.line}:${token.column}` : '';
+            throw new Error(`Syntax error: Expected ${type} but got ${token.type}${location}`);
         }
         return token;
     }
@@ -335,12 +346,18 @@ class Parser {
         } else if (token.type === 'IDENTIFIER') {
             return token.value; // Custom type like lv_obj
         } else {
-            throw new Error(`Expected type but got ${token.type}`);
+            const location = token.line && token.column ? ` at line ${token.line}:${token.column}` : '';
+            throw new Error(`Syntax error: Expected type but got ${token.type}${location}`);
         }
     }
 
     // BlockStatement = '{' Statement* '}'
     parseBlockStatement() {
+        const token = this.peek();
+        if (token.type !== 'LBRACE') {
+            const location = token.line && token.column ? ` at line ${token.line}:${token.column}` : '';
+            throw new Error(`Syntax error: Expected { but got ${token.type}${location}. Function bodies must be wrapped in curly braces { }`);
+        }
         this.expect('LBRACE');
         const statements = [];
         while (this.peek().type !== 'RBRACE') {
@@ -611,7 +628,7 @@ class Parser {
 
             if (token.type === 'LPAREN') {
                 // Function call
-                this.advance();
+                const callToken = this.advance();
                 const args = [];
                 if (this.peek().type !== 'RPAREN') {
                     args.push(this.parseExpression());
@@ -621,7 +638,12 @@ class Parser {
                     }
                 }
                 this.expect('RPAREN');
-                expr = { type: 'CallExpression', callee: expr, arguments: args };
+                expr = { 
+                    type: 'CallExpression', 
+                    callee: expr, 
+                    arguments: args,
+                    loc: expr.loc || { line: callToken.line, column: callToken.column, length: callToken.length }
+                };
             } else if (token.type === 'DOT') {
                 // Member access
                 this.advance();
@@ -649,25 +671,28 @@ class Parser {
         const token = this.peek();
 
         if (token.type === 'IDENTIFIER') {
-            return { type: 'Identifier', name: this.advance().value };
+            const idToken = this.advance();
+            return { type: 'Identifier', name: idToken.value, loc: { line: idToken.line, column: idToken.column, length: idToken.length } };
         }
 
         if (token.type === 'NUMBER') {
-            return { type: 'Literal', value: this.advance().value };
+            const numToken = this.advance();
+            return { type: 'Literal', value: numToken.value, loc: { line: numToken.line, column: numToken.column, length: numToken.length } };
         }
 
         if (token.type === 'STRING') {
-            return { type: 'Literal', value: this.advance().value };
+            const strToken = this.advance();
+            return { type: 'Literal', value: strToken.value, loc: { line: strToken.line, column: strToken.column, length: strToken.length } };
         }
 
         if (token.type === 'TRUE') {
-            this.advance();
-            return { type: 'Literal', value: true };
+            const trueToken = this.advance();
+            return { type: 'Literal', value: true, loc: { line: trueToken.line, column: trueToken.column, length: trueToken.length } };
         }
 
         if (token.type === 'FALSE') {
-            this.advance();
-            return { type: 'Literal', value: false };
+            const falseToken = this.advance();
+            return { type: 'Literal', value: false, loc: { line: falseToken.line, column: falseToken.column, length: falseToken.length } };
         }
 
         if (token.type === 'NULL') {
@@ -687,7 +712,8 @@ class Parser {
             return expr;
         }
 
-        throw new Error(`Unexpected token ${token.type}`);
+        const location = token.line && token.column ? ` at line ${token.line}:${token.column}` : '';
+        throw new Error(`Syntax error: Unexpected token ${token.type}${location}`);
     }
 }
 
@@ -799,19 +825,19 @@ class Interpreter {
         const errorNode = node || this.currentNode;
         let errorMsg = message;
 
-        // Add source context if available
-        if (this.sourceCode && errorNode && errorNode.loc) {
-            const lines = this.sourceCode.split('\n');
-            const line = errorNode.loc.line - 1;
-            const col = errorNode.loc.column;
+        // Add source context if available (but don't duplicate line/column in message)
+        if (errorNode && errorNode.loc) {
+            const line = errorNode.loc.line;
+            const col = errorNode.loc.column; // Already 1-based from lexer
+            const len = errorNode.loc.length || 1; // Token length from lexer
 
-            errorMsg += `\n\nAt line ${errorNode.loc.line}, column ${col + 1}:`;
-
-            // Show the line with the error
-            if (line >= 0 && line < lines.length) {
-                errorMsg += `\n${lines[line]}`;
-                errorMsg += `\n${' '.repeat(col)}^`;
-            }
+            // Add "At line X, column Y, length Z:" prefix for error extraction with Runtime error label
+            errorMsg = `At line ${line}, column ${col}, length ${len}: Runtime error: ${message}`;
+            
+            // Don't add source code snippet - it clutters the display
+        } else {
+            // No location info, just add Runtime error prefix
+            errorMsg = `Runtime error: ${message}`;
         }
 
         return new Error(errorMsg);
@@ -846,7 +872,7 @@ class Interpreter {
             case 'ReturnStatement':
                 return this.visitReturnStatement(node, scope);
             default:
-                throw new Error(`Unknown statement type: ${node.type}`);
+                throw this.createRuntimeError(`Unknown statement type: ${node.type}`, node);
         }
     }
 
@@ -874,7 +900,7 @@ class Interpreter {
             if (node.varType === 'cstring' && actualType === 'string') {
                 value = this.convertStringToCString(value);
             } else if (!this.isTypeCompatible(actualType, node.varType)) {
-                throw new Error(`Type mismatch: Cannot assign ${actualType} to ${node.varType}`);
+                throw this.createRuntimeError(`Type mismatch: Cannot assign ${actualType} to ${node.varType}`, node);
             }
         }
 
@@ -926,16 +952,18 @@ class Interpreter {
     convertStringToCString(value) {
         // Convert JavaScript string to C string using System.stringToNewUTF8
         if (!this.globals.System || !this.globals.System.stringToNewUTF8) {
-            throw new Error('System.stringToNewUTF8 is required for cstring conversion but is not available');
+            throw this.createRuntimeError('System.stringToNewUTF8 is required for cstring conversion but is not available', this.currentNode);
         }
         return this.globals.System.stringToNewUTF8(value);
     }
 
     visitExpressionStatement(node, scope) {
+        this.currentNode = node;
         return this.visitExpression(node.expression, scope);
     }
 
     visitBlockStatement(node, scope) {
+        this.currentNode = node;
         const blockScope = Object.create(scope);
 
         for (const statement of node.body) {
@@ -1001,6 +1029,7 @@ class Interpreter {
     }
 
     visitExpression(node, scope) {
+        this.currentNode = node;
         switch (node.type) {
             case 'Literal':
                 return node.value;
@@ -1019,7 +1048,7 @@ class Interpreter {
             case 'MemberExpression':
                 return this.visitMemberExpression(node, scope);
             default:
-                throw new Error(`Unknown expression type: ${node.type}`);
+                throw this.createRuntimeError(`Unknown expression type: ${node.type}`, node);
         }
     }
 
@@ -1029,10 +1058,9 @@ class Interpreter {
             if (this.constants && node.name in this.constants) {
                 return this.constants[node.name];
             }
-            throw new Error(`Unknown constant: ${node.name}`);
+            throw this.createRuntimeError(`Unknown constant: ${node.name}`, node);
         }
-
-        // Check if it's a global object
+        
         if (node.name in this.globals) {
             return this.globals[node.name];
         }
@@ -1046,7 +1074,7 @@ class Interpreter {
             currentScope = Object.getPrototypeOf(currentScope);
         }
 
-        throw new Error(`Undefined variable: ${node.name}`);
+        throw this.createRuntimeError(`Undefined variable: ${node.name}`, node);
     }
 
     visitBinaryExpression(node, scope) {
@@ -1071,7 +1099,7 @@ class Interpreter {
             case '&': return left & right;
             case '^': return left ^ right;
             default:
-                throw new Error(`Unknown binary operator: ${node.operator}`);
+                throw this.createRuntimeError(`Unknown binary operator: ${node.operator}`, node);
         }
     }
 
@@ -1092,7 +1120,7 @@ class Interpreter {
                 }
                 break;
             default:
-                throw new Error(`Unknown unary operator: ${node.operator}`);
+                throw this.createRuntimeError(`Unknown unary operator: ${node.operator}`, node);
         }
     }
 
@@ -1103,7 +1131,7 @@ class Interpreter {
 
     incrementVariable(node, scope, delta, prefix) {
         if (node.type !== 'Identifier') {
-            throw new Error('Can only increment variables');
+            throw this.createRuntimeError('Can only increment variables', node);
         }
 
         const oldValue = this.visitIdentifier(node, scope);
@@ -1120,7 +1148,7 @@ class Interpreter {
         }
 
         // If not found in any scope, this shouldn't happen since visitIdentifier succeeded
-        throw new Error(`Cannot increment undefined variable: ${node.name}`);
+        throw this.createRuntimeError(`Cannot increment undefined variable: ${node.name}`, node);
     }
 
     visitAssignmentExpression(node, scope) {
@@ -1139,7 +1167,7 @@ class Interpreter {
                     }
                     currentScope = Object.getPrototypeOf(currentScope);
                 }
-                throw new Error(`Cannot assign to undefined variable: ${name}`);
+                throw this.createRuntimeError(`Cannot assign to undefined variable: ${name}`, node);
             } else {
                 // Compound assignment
                 const oldValue = this.visitIdentifier(node.left, scope);
@@ -1149,7 +1177,7 @@ class Interpreter {
                     case '-=': newValue = oldValue - value; break;
                     case '*=': newValue = oldValue * value; break;
                     case '/=': newValue = oldValue / value; break;
-                    default: throw new Error(`Unknown assignment operator: ${node.operator}`);
+                    default: throw this.createRuntimeError(`Unknown assignment operator: ${node.operator}`, node);
                 }
 
                 let currentScope = scope;
@@ -1160,11 +1188,11 @@ class Interpreter {
                     }
                     currentScope = Object.getPrototypeOf(currentScope);
                 }
-                throw new Error(`Cannot assign to undefined variable: ${name}`);
+                throw this.createRuntimeError(`Cannot assign to undefined variable: ${name}`, node);
             }
         }
 
-        throw new Error('Invalid assignment target');
+        throw this.createRuntimeError('Invalid assignment target', node);
     }
 
     visitCallExpression(node, scope) {
@@ -1182,14 +1210,26 @@ class Interpreter {
             if (name.startsWith('lv_')) {
                 // Check if function is in allowed list (if list is provided)
                 if (this.allowedFunctions !== null && !this.allowedFunctions.includes(name)) {
-                    throw new Error(`LVGL function not allowed: ${name}`);
+                    throw this.createRuntimeError(`LVGL function not allowed: ${name}`, node);
                 }
 
-                const lvglFuncName = '_' + name;
+                // Resolve alias if this function is an alias for another
+                // Also check for runtimeName (from static_inline) which specifies the actual WASM function
+                let actualFuncName = name;
+                if (this.functionTypes[name]) {
+                    if (this.functionTypes[name].runtimeName) {
+                        actualFuncName = this.functionTypes[name].runtimeName;
+                    } else if (this.functionTypes[name].aliasOf) {
+                        actualFuncName = this.functionTypes[name].aliasOf;
+                    }
+                }
+
+                const lvglFuncName = '_' + actualFuncName;
                 if (this.lvgl && typeof this.lvgl[lvglFuncName] === 'function') {
                     func = this.lvgl[lvglFuncName].bind(this.lvgl);
                 } else {
-                    throw new Error(`Unknown LVGL function: ${name}`);
+                    const typeInfo = this.functionTypes[name];
+                    throw this.createRuntimeError(`Unknown LVGL function: ${name}`, node);
                 }
             } else {
                 func = this.visitIdentifier(node.callee, scope);
@@ -1320,7 +1360,10 @@ class Interpreter {
                         if (!this._colorBuffer && this.lvgl && this.lvgl._lv_malloc) {
                             this._colorBuffer = this.lvgl._lv_malloc(4);
                         }
-                        // Call lv_color_hex with sret convention
+                        // Call lv_color_hex with sret convention (only available in v9+)
+                        if (!this.lvgl._lv_color_hex) {
+                            throw this.createRuntimeError(`lv_color_hex is not available in this LVGL version. Use lv_color_make(r, g, b) instead, or upgrade to LVGL v9+`, argNode);
+                        }
                         this.lvgl._lv_color_hex(this._colorBuffer, args[i]);
                         args[i] = this._colorBuffer;
                     }
@@ -1334,7 +1377,7 @@ class Interpreter {
 
         // Call function
         if (typeof func !== 'function') {
-            throw new Error(`Cannot call non-function: ${typeof func}`);
+            throw this.createRuntimeError(`Cannot call non-function: ${typeof func}`, node);
         }
 
         // Special handling for lv_obj_add_event_cb
@@ -1491,7 +1534,7 @@ function eez_script_compile(script) {
         const parser = new Parser(tokens);
         ast = parser.parseProgram();
     } catch (error) {
-        throw new Error(`Parse error: ${error.message}`);
+        throw error;
     }
 
     return {
@@ -1743,11 +1786,23 @@ function emitJS(ast, allowedFunctions) {
 
             case 'CallExpression':
                 let calleeName = null;
+                let actualFuncName = null;
                 let calleePrefix = '';
 
                 // Check if this is an lv_* function call
                 if (node.callee.type === 'Identifier' && node.callee.name.startsWith('lv_')) {
                     calleeName = node.callee.name;
+                    actualFuncName = calleeName;
+                    
+                    // Resolve runtimeName (from static_inline) or alias to get the actual WASM function name
+                    if (allowedFunctions && allowedFunctions[calleeName]) {
+                        if (allowedFunctions[calleeName].runtimeName) {
+                            actualFuncName = allowedFunctions[calleeName].runtimeName;
+                        } else if (allowedFunctions[calleeName].aliasOf) {
+                            actualFuncName = allowedFunctions[calleeName].aliasOf;
+                        }
+                    }
+                    
                     calleePrefix = 'lvgl._';
                 }
 
@@ -1813,7 +1868,8 @@ function emitJS(ast, allowedFunctions) {
                 const args = emittedArgs.join(', ');
 
                 if (calleePrefix) {
-                    return `${calleePrefix}${calleeName}(${args})`;
+                    // Use actualFuncName (resolved alias) for the actual function call
+                    return `${calleePrefix}${actualFuncName}(${args})`;
                 } else {
                     return `${emit(node.callee, 0, context)}(${args})`;
                 }
